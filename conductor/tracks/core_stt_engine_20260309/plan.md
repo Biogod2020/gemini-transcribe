@@ -1,10 +1,10 @@
 # Implementation Plan: Core Long-Audio STT Engine
 
 ## Phase 1: Environment Setup and Initial Dependencies
-- [x] Task: Initialize UV environment and install core Python dependencies
+- [x] Task: Initialize UV environment and install core Python dependencies (9d5e8ea)
     - [x] `uv add langgraph httpx onnxruntime silero-vad pydub pytest pytest-asyncio`
     - [x] Configure `pyproject.toml` for standard project layout.
-- [x] Task: Set up local project structure (app, tests, data)
+- [x] Task: Set up local project structure (app, tests, data) (9d5e8ea)
     - [x] Create `app/`, `tests/`, and `data/` directories.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Environment Setup' (Protocol in workflow.md)
 
