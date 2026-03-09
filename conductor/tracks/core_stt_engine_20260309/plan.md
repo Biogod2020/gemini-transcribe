@@ -17,14 +17,14 @@
     - [x] **Implement Feature**: Use `pydub` or similar to export chunk segments.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Local VAD Segmentation' (Protocol in workflow.md) (159fd3e)
 
-## Phase 3: Global Context Generator
+## Phase 3: Global Context Generator [checkpoint: 7b5a663]
 - [x] Task: Implement Gemini File Upload and Polling Logic (29da2c8)
     - [x] **Write Tests**: Mock Gemini API to verify file upload and state polling.
     - [x] **Implement Feature**: Develop `app/gemini_client.py` for direct RESTful interaction with Google File API.
-- [x] Task: Implement Global Memory Generation Pass (e8f9a2d)
+- [x] Task: Implement Global Memory Generation Pass (2e141e6)
     - [x] **Write Tests**: Verify JSON extraction of theme, speakers, and glossary.
     - [x] **Implement Feature**: Create prompt logic for the initial "listen-all" pass.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Global Context' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Global Context' (Protocol in workflow.md) (7b5a663)
 
 ## Phase 4: Core Transcription Loop (LangGraph)
 - [ ] Task: Define STT State Machine with LangGraph
