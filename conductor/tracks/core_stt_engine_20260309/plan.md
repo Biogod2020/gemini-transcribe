@@ -8,14 +8,14 @@
     - [x] Create `app/`, `tests/`, and `data/` directories.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Environment Setup' (Protocol in workflow.md) (89c10c2)
 
-## Phase 2: Local VAD Segmentation Module
+## Phase 2: Local VAD Segmentation Module [checkpoint: 159fd3e]
 - [x] Task: Implement Silence-Based Segmentation using Silero VAD (4c4e2f8)
     - [x] **Write Tests**: Create `tests/test_vad.py` to verify silence detection and chunking.
     - [x] **Implement Feature**: Develop `app/vad_processor.py` to split audio at natural silence points (>700ms).
-- [x] Task: Implement Audio Export to MP3/WAV Chunks (38a3f8b)
+- [x] Task: Implement Audio Export to MP3/WAV Chunks (4de6964)
     - [x] **Write Tests**: Verify file outputs for named chunks.
     - [x] **Implement Feature**: Use `pydub` or similar to export chunk segments.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Local VAD Segmentation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Local VAD Segmentation' (Protocol in workflow.md) (159fd3e)
 
 ## Phase 3: Global Context Generator
 - [ ] Task: Implement Gemini File Upload and Polling Logic
