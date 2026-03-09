@@ -27,7 +27,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Global Context' (Protocol in workflow.md) (7b5a663)
 
 ## Phase 4: Core Transcription Loop (LangGraph)
-- [ ] Task: Define STT State Machine with LangGraph
+- [~] Task: Define STT State Machine with LangGraph
     - [ ] **Write Tests**: Verify graph transitions and state persistence.
     - [ ] **Implement Feature**: Develop `app/graph.py` to orchestrate the sliding window transcription loop.
 - [ ] Task: Implement Sliding Window Transcription with Local Context
