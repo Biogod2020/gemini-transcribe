@@ -1,12 +1,12 @@
 # Implementation Plan: Core Long-Audio STT Engine
 
-## Phase 1: Environment Setup and Initial Dependencies
+## Phase 1: Environment Setup and Initial Dependencies [checkpoint: 89c10c2]
 - [x] Task: Initialize UV environment and install core Python dependencies (9d5e8ea)
     - [x] `uv add langgraph httpx onnxruntime silero-vad pydub pytest pytest-asyncio`
     - [x] Configure `pyproject.toml` for standard project layout.
 - [x] Task: Set up local project structure (app, tests, data) (9d5e8ea)
     - [x] Create `app/`, `tests/`, and `data/` directories.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Environment Setup' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Environment Setup' (Protocol in workflow.md) (89c10c2)
 
 ## Phase 2: Local VAD Segmentation Module
 - [ ] Task: Implement Silence-Based Segmentation using Silero VAD
