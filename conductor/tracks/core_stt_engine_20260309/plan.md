@@ -18,9 +18,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Local VAD Segmentation' (Protocol in workflow.md) (159fd3e)
 
 ## Phase 3: Global Context Generator
-- [ ] Task: Implement Gemini File Upload and Polling Logic
-    - [ ] **Write Tests**: Mock Gemini API to verify file upload and state polling.
-    - [ ] **Implement Feature**: Develop `app/gemini_client.py` for direct RESTful interaction with Google File API.
+- [x] Task: Implement Gemini File Upload and Polling Logic (d3e1f2b)
+    - [x] **Write Tests**: Mock Gemini API to verify file upload and state polling.
+    - [x] **Implement Feature**: Develop `app/gemini_client.py` for direct RESTful interaction with Google File API.
 - [ ] Task: Implement Global Memory Generation Pass
     - [ ] **Write Tests**: Verify JSON extraction of theme, speakers, and glossary.
     - [ ] **Implement Feature**: Create prompt logic for the initial "listen-all" pass.
