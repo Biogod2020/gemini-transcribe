@@ -9,7 +9,7 @@
 ## 1. 系统概述与核心基准
 
 * **目标：** 实现超长音频的高精度、带说话人分离的逐字转录，解决上下文断裂和人物指代混乱问题。
-* **核心模型：** `gemini-3.0-flash-preview`（用于所有语言理解和转写任务）。
+* **核心模型：** `gemini-3.1-flash-lite-preview`（用于所有语言理解和转写任务）。
 * **交互方式：** 纯原生 HTTP RESTful API（无任何官方 SDK 封装）。
 * **音频预处理：** 本地 CPU 运行的轻量级 VAD（Voice Activity Detection）模型。
 
@@ -45,7 +45,7 @@
 * **执行逻辑：**
 1. 输入完整 `source_audio.mp3`。
 2. 加载轻量级 VAD 模型（如 Silero VAD，纯 CPU 运行）。
-3. 以 5 分钟（300,000 毫秒）为目标长度，寻找最接近该长度且 VAD 置信度 `< 0.1` 持续时长 `> 700ms` 的静音点进行切割。
+3. 以 7-10 分钟为目标边界，寻找最接近该长度且 VAD 置信度 `< 0.1` 持续时长 `> 700ms` 的静音点进行切割。
 
 
 * **输出约定：** 生成一系列按序命名的文件：`chunk_1.mp3`, `chunk_2.mp3` ... `chunk_N.mp3`。
@@ -54,7 +54,7 @@
 
 * **前置动作：** 使用 Google File API 上传**完整未切割的原始音频**，获取到文件的 `fileUri`。
 * **API 请求：** 生成全局记忆
-* **Endpoint:** `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash-preview:generateContent?key={{API_KEY}}`
+* **Endpoint:** `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key={{API_KEY}}`
 * **Headers:** `Content-Type: application/json`
 * **Payload (请求体):**
 ```json
@@ -67,7 +67,7 @@
       "role": "user",
       "parts": [
         {
-          "text": "请完整听完这段音频。请输出一个严格的 JSON 格式数据，包含三个字段：\n1. 'theme': 概括核心议题（50字内）。\n2. 'speakers': 数组，列出所有出现的不同说话人，包含 'id' (如 Speaker_A) 和 'characteristics' (声音特征 and 身份推测)。\n3. 'glossary': 数组，列出 10-20 个核心的专有名词或行业术语。"
+          "text": "请完整听完这段音频。请进行深度的全局分析，并输出一个严格的 JSON 格式数据，包含以下六个字段：\n1. 'theme': 概括核心议题（50字内）。\n2. 'speakers': 数组，列出所有出现的不同说话人，包含 'id' (如 Speaker_A) 和 'characteristics' (声音特征和身份推测)。\n3. 'glossary': 数组，列出 10-20 个核心的专有名词或行业术语。\n4. 'tone': 字符串，概括整段音频的总体基调和氛围。\n5. 'key_decisions': 数组，列出音频中达成的关键共识或重要决定。\n6. 'narrative_structure': 字符串，简述音频的整体叙事结构或会议议程。"
         },
         {
           "fileData": {
@@ -87,16 +87,14 @@
 
 * **工程师动作：** 将 API 响应的 JSON 解析后，全量赋值给系统状态机中的 `State.global_memory`。
 
-### 模块三：核心双路滑动转写循环 (Sliding Window Loop)
+### 模块三：核心全量上下文转写循环 (Full-Context Loop)
 
 * **执行逻辑：** 对模块一生成的 `chunk_1` 到 `chunk_N` 进行一个 `for` 循环遍历。假设当前处理到 `chunk_i`。
 * **前置动作：** 上传当前的 `chunk_i.mp3`，获取其 `fileUri`。
 * **上下文提取：**
-* 获取 $i-2$ 段的文本：`text_minus_2 = State.processed_chunks[i-2].transcript`（如果不存在则为空字符串）。
-* 获取 $i-1$ 段的文本：`text_minus_1 = State.processed_chunks[i-1].transcript`（如果不存在则为空字符串）。
+* 提取完整历史：`full_context = State.processed_chunks`（拼接为带段落号的长文本，如果为空则提示无历史）。
 
-
-* **API 请求：** 精准转写
+* **API 请求：** 精准转写 (带 Chain-of-Thought)
 * **Endpoint:** 同模块二。
 * **Payload (请求体 - 请工程师通过代码动态拼接):**
 ```json
@@ -107,7 +105,7 @@
   "system_instruction": {
     "parts": [
       {
-        "text": "你是一个严谨的语音转写专家。你必须逐字转录提供的音频，绝不润色，绝不总结。"
+        "text": "你是一个严谨的语音转写专家。你必须忠实转录提供的音频，但需要根据语境理顺逻辑。"
       }
     ]
   },
@@ -116,7 +114,7 @@
       "role": "user",
       "parts": [
         {
-          "text": "【系统级全局记忆】\n核心议题：{{State.global_memory.theme}}\n专有名词表：{{State.global_memory.glossary}}\n说话人画像：{{State.global_memory.speakers}}\n\n【近期历史转录（仅供参考对齐，切勿重复转写）】\n倒数第二段：{{text_minus_2}}\n上一段：{{text_minus_1}}\n\n【当前任务】\n请紧接“上一段”的结尾，逐字转写本次音频流。严格使用【全局记忆】中的说话人 id。请输出 JSON 数组，每个元素包含 'speaker_id' 和 'text' 两个字段。"
+          "text": "【系统级全局记忆】\n核心议题：{{State.global_memory.theme}}\n专有名词表：{{State.global_memory.glossary}}\n说话人画像：{{State.global_memory.speakers}}\n\n【历史转录全文（仅供参考对齐上下文，切勿重复转写）】\n{{full_context}}\n\n【当前任务】\n请紧接上一段的结尾转写。在进行转写前，请先进行一步一步的思考和分析（Chain-of-Thought），理顺逻辑和意图。思考结束后，输出 JSON 数组，每个元素包含 'speaker_id' 和 'text' 两个字段。"
         },
         {
           "fileData": {
@@ -131,11 +129,8 @@
 
 ```
 
-
-
-
 * **工程师动作：**
-1. 解析大模型返回的 JSON 数组。
+1. 解析大模型返回的 JSON（忽略前面的思考过程文本）。
 2. 将数组格式化为纯文本格式（例如 `"Speaker_A: 刚刚说到的..."`）。
 3. 将格式化后的完整字符串 push 到 `State.processed_chunks` 数组中。
 4. 循环进入下一个 Chunk。
@@ -171,13 +166,13 @@ An AI-driven speech-to-text (STT) agent that provides ultra-accurate, speaker-aw
 - **General Users**: Anyone requiring professional-grade transcription for long audio files (e.g., meetings, interviews, lectures).
 
 ## Core Features (MVP)
-1. **High-Precision Transcription**: Using `gemini-3.0-flash-preview` to achieve verbatim accuracy without summarization or creative rewriting.
+1. **High-Precision Transcription**: Using `gemini-3.1-flash-lite-preview` to achieve verbatim accuracy without summarization or creative rewriting.
 2. **Speaker Consistency & Diarization**: Global speaker profiling ensures consistent identity across long recordings, even when audio is chunked.
 3. **Glossary-Aware Alignment**: A pre-generated global glossary ensures specialized terminology and proper nouns are transcribed correctly throughout the document.
 4. **Local VAD-Based Segmentation**: Intelligent audio splitting at silence points using Voice Activity Detection (VAD) to maintain natural speech flow.
 5. **Dual-Layer Contextual Memory**:
    - **Global Memory**: High-level overview, speaker profiles, and glossary.
-   - **Local Memory**: Sliding window of previous transcript chunks for seamless transitions.
+   - **Local Memory**: Full history context injection to ensure seamless transitions and logical flow across chunks.
 
 ## Technical Architecture
 - **Environment**: Web-based application.

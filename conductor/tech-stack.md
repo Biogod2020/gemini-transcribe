@@ -6,7 +6,7 @@
 - **Environment Management**: **uv** for fast, reliable, and deterministic project and environment management.
 
 ## AI & Audio Processing
-- **AI Model**: `gemini-3.0-flash-preview` accessed via direct HTTP RESTful API (using `httpx` or `requests`) to minimize dependencies.
+- **AI Model**: `gemini-3.1-flash-lite-preview` accessed via direct HTTP RESTful API (using `httpx` or `requests`) to minimize dependencies.
 - **VAD Segmentation**: **Silero VAD** (running on local CPU via `onnxruntime`) for intelligent, high-speed audio splitting.
 - **Audio Conversion**: **pydub** or **librosa** (backed by FFmpeg) for audio format handling.
 
