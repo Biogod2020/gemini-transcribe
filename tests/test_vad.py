@@ -70,7 +70,7 @@ def test_chunking_logic_with_bounds(mocker):
     
     # Should chunk between 7 mins (420s) and 10 mins (600s)
     # With silences every minute, it should ideally split around the 8, 9, or 10 min mark.
-    chunks = processor.get_chunks(audio, sampling_rate=sr)
+    chunks = processor.get_chunks(audio, sampling_rate=sr, target_chunk_duration_sec=420, max_chunk_duration_sec=600)
     
     assert len(chunks) > 0
     # The first few chunks must be between 7 and 10 mins (420s to 600s)

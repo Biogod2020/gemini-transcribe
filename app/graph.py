@@ -8,16 +8,17 @@ from app.transcriber import build_transcription_prompt, parse_transcription_resp
 class STTState(TypedDict):
     project_id: str
     global_memory: Dict[str, Any]
-    processed_chunks: List[Dict[str, Any]] # [{"chunk_index": 0, "transcript": "...", "raw_json": [...]}]
+    processed_chunks: List[Dict[str, Any]] # [{"chunk_index": 0, "transcript": "...", "raw_json": [...], "thought": "..."}]
     chunks_to_process: List[str] # List of file paths
     current_chunk_index: int
     api_key: str
     model_name: str
+    use_inline_data: bool
 
 async def transcribe_chunk_node(state: STTState) -> STTState:
     """
     This node processes the current chunk using Gemini.
-    It uploads the chunk, builds the prompt with N-2 context, and parses the response.
+    It uploads the chunk, builds the prompt with context, and parses the response.
     """
     current_index = state["current_chunk_index"]
     chunks = state["chunks_to_process"]
@@ -26,7 +27,7 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
         return state
 
     file_path = chunks[current_index]
-    client = GeminiClient(api_key=state["api_key"], model=state["model_name"])
+    client = GeminiClient(api_key=state["api_key"], model=state["model_name"], use_inline_data=state.get("use_inline_data", False))
     
     print(f"--- Processing Chunk {current_index}/{len(chunks)}: {os.path.basename(file_path)} ---")
     
@@ -40,25 +41,26 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
         display_name=f"chunk_{current_index}"
     )
     
-    # 2. Wait for ACTIVE state
+    # 2. Wait for ACTIVE state (if not using inline data)
     is_ready = await client.poll_file_state(file_name)
     if not is_ready:
         print(f"Error: Chunk {current_index} failed to upload.")
         return state
 
-    # 3. Build Prompt (Sliding Window N-2)
+    # 3. Build Prompt
     prompt = build_transcription_prompt(state["global_memory"], state["processed_chunks"])
     
     # 4. Generate Transcription
-    # Note: generate_content returns a Dict (parsed JSON) because client uses response_mime_type: application/json
     try:
-        # If the client already parses JSON via response_mime_type, we might not need the re parser
-        # but let's be safe.
-        raw_response = await client.generate_content(
+        response = await client.generate_content(
             prompt=prompt,
+            mime_type="audio/mpeg",
             file_uri=file_uri,
-            mime_type="audio/mpeg"
+            audio_content=content
         )
+        
+        raw_response = response["data"]
+        thoughts = response["thought"]
         
         # Check if raw_response is already a list or needs parsing from a string
         if isinstance(raw_response, list):
@@ -82,7 +84,8 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
         new_chunk = {
             "chunk_index": current_index,
             "transcript": transcript_str,
-            "raw_json": transcript_list
+            "raw_json": transcript_list,
+            "thought": thoughts
         }
         
         return {
@@ -92,8 +95,6 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
         }
     except Exception as e:
         print(f"Error transcribing chunk {current_index}: {e}")
-        # Return state without incrementing index to allow retry or just skip? 
-        # For now, let's increment to avoid infinite loop in this test run.
         return {
             **state,
             "current_chunk_index": current_index + 1

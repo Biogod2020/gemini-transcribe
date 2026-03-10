@@ -53,9 +53,9 @@ async def test_generate_content():
         )
         
         response = await client.generate_content(
-            prompt="summarize this", 
-            file_uri="https://file.uri", 
+            prompt="summarize this",
+            file_uri="https://file.uri",
             mime_type="audio/mp3"
         )
-        
-        assert response["theme"] == "test"
+
+        assert response["data"]["theme"] == "test"

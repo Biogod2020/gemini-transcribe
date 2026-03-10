@@ -10,14 +10,16 @@ async def test_generate_global_memory():
     mock_client.upload_file.return_value = ("https://file.uri", "files/test_file")
     mock_client.poll_file_state.return_value = True
     mock_client.generate_content.return_value = {
-        "theme": "AI and Speech",
-        "speakers": [{"id": "Speaker_A", "characteristics": "Calm voice"}],
-        "glossary": ["LLM", "VAD"],
-        "tone": "Professional and informative",
-        "key_decisions": ["Adopt Gemini 3.1", "Use Silero VAD"],
-        "narrative_structure": "Introduction -> Technical deep dive -> Conclusion"
-    }
-    
+        "data": {
+            "theme": "AI and Speech",
+            "speakers": [{"id": "Speaker_A", "characteristics": "Calm voice"}],
+            "glossary": ["LLM", "VAD"],
+            "tone": "Professional and informative",
+            "key_decisions": ["Adopt Gemini 3.1", "Use Silero VAD"],
+            "narrative_structure": "Introduction -> Technical deep dive -> Conclusion"
+        },
+        "thought": "Mock thought process"
+    }    
     generator = GlobalMemoryGenerator(mock_client)
     memory = await generator.generate(b"fake_audio_content")
     

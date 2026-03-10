@@ -31,10 +31,11 @@ class GlobalMemoryGenerator:
             raise RuntimeError(f"File {file_name} failed to become ACTIVE.")
             
         # 3. Generate the global context JSON
-        memory = await self.client.generate_content(
+        response = await self.client.generate_content(
             prompt=self.prompt,
+            mime_type="audio/mpeg",
             file_uri=file_uri,
-            mime_type="audio/mpeg"
+            audio_content=audio_content
         )
         
-        return memory
+        return response["data"]
