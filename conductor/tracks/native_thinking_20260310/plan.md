@@ -1,13 +1,13 @@
 # Implementation Plan: Native Thinking Mode & Prompt Optimization
 
-## Phase 1: API & Client Updates
+## Phase 1: API & Client Updates [checkpoint: ba048fc]
 - [x] Task: Update `GeminiClient` for native Thinking Mode [0b284fb]
     - [x] **Write Tests**: Create a mock response with `thought: true` in the `parts` array to verify extraction logic.
     - [x] **Implement Feature**: 
         - Add `thinking_level` to `Config`.
         - Update `generate_content` payload to include `thinking_config`.
         - Modify response parsing to separate `thought` parts from `text` parts.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: API Updates' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: API Updates' (Protocol in workflow.md) [ba048fc]
 
 ## Phase 2: Prompt Refactoring
 - [ ] Task: Refactor `app/transcriber.py` Prompt Template
