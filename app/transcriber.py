@@ -7,6 +7,9 @@ def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: 
     Builds the transcription prompt containing global memory and ALL previous local context.
     Instructs the model to use Chain-of-Thought reasoning.
     """
+    if isinstance(global_memory, list) and len(global_memory) > 0:
+        global_memory = global_memory[0]
+        
     theme = global_memory.get("theme", "")
     glossary = ", ".join(global_memory.get("glossary", []))
     speakers = json.dumps(global_memory.get("speakers", []), ensure_ascii=False)
