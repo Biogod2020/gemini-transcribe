@@ -4,31 +4,20 @@ from typing import Dict, Any, List
 
 def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: List[Dict[str, Any]]) -> str:
     """
-    Builds the sliding window transcription prompt containing global memory and N-2 local context.
-    Ensures that only the last 2 chunks are used for context.
+    Builds the transcription prompt containing global memory and ALL previous local context.
+    Instructs the model to use Chain-of-Thought reasoning.
     """
     theme = global_memory.get("theme", "")
     glossary = ", ".join(global_memory.get("glossary", []))
     speakers = json.dumps(global_memory.get("speakers", []), ensure_ascii=False)
     
-    # Get the last two processed chunks for sliding window context
-    # This is the core logic for N-2 context
-    context_chunks = processed_chunks[-2:] if len(processed_chunks) >= 2 else processed_chunks
-    
     context_text = ""
-    if len(context_chunks) == 2:
-        context_text = (
-            f"【近期历史转录（仅供参考对齐，切勿重复转写）】\n"
-            f"倒数第二段：{context_chunks[0].get('transcript', '')}\n"
-            f"上一段：{context_chunks[1].get('transcript', '')}"
-        )
-    elif len(context_chunks) == 1:
-        context_text = (
-            f"【近期历史转录（仅供参考对齐，切勿重复转写）】\n"
-            f"上一段：{context_chunks[0].get('transcript', '')}"
-        )
+    if processed_chunks:
+        context_text = "【历史转录全文（仅供参考对齐上下文，切勿重复转写）】\n"
+        for chunk in processed_chunks:
+            context_text += f"--- 第 {chunk['chunk_index']} 段 ---\n{chunk.get('transcript', '')}\n"
     else:
-        context_text = "【近期历史转录】\n（这是第一段音频，无历史转录）"
+        context_text = "【历史转录全文】\n（这是第一段音频，无历史转录）"
 
     prompt = f"""【系统级全局记忆】
 核心议题：{theme}
@@ -38,14 +27,21 @@ def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: 
 {context_text}
 
 【当前任务】
-请紧接“上一段”的结尾（如果有的话），逐字转写本次音频流。严格使用【全局记忆】中的说话人 id。
+请紧接上一段的结尾（如果有的话），转写本次音频流。
+在进行转写前，请先进行一步一步的思考和分析（Chain-of-Thought）：
+1. 结合【系统级全局记忆】和【历史转录全文】的逻辑，理解当前音频段落的上下文和语境。
+2. 识别当前说话人的意图，确保对话逻辑连贯，不要生硬地字对字直译，而要根据逻辑理顺内容，但必须忠于原意。
+3. 严格使用【系统级全局记忆】中的说话人 id。
 
-请输出 JSON 格式的数组，每个元素包含 'speaker_id' 和 'text' 两个字段。
-示例：
+请在思考结束后，输出 JSON 格式的数组，每个元素包含 'speaker_id' 和 'text' 两个字段。
+示例输出结构：
+首先，根据上文的语境...这段音频主要讨论...
+```json
 [
   {{"speaker_id": "SPEAKER_01", "text": "你好，今天我们讨论一下..."}},
   {{"speaker_id": "SPEAKER_02", "text": "好的，我先开始。"}}
-]"""
+]
+```"""
 
     return prompt
 

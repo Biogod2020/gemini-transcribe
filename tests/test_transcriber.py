@@ -18,9 +18,9 @@ def test_build_prompt_no_history():
     assert "Speaker_A" in prompt
     assert "无历史转录" in prompt
 
-def test_build_prompt_sliding_window_n_minus_2():
-    """Test that prompt ONLY includes N-1 and N-2 chunks even with long history."""
-    global_memory = {"theme": "Sliding Window Test", "glossary": [], "speakers": []}
+def test_build_prompt_full_context():
+    """Test that prompt includes ALL previous chunks."""
+    global_memory = {"theme": "Full Context Test", "glossary": [], "speakers": []}
     processed_chunks = [
         {"chunk_index": 0, "transcript": "CHUNK 0 CONTENT"},
         {"chunk_index": 1, "transcript": "CHUNK 1 CONTENT"},
@@ -30,13 +30,28 @@ def test_build_prompt_sliding_window_n_minus_2():
     
     prompt = build_transcription_prompt(global_memory, processed_chunks)
     
-    # Should include 2 and 3
+    # Should include ALL chunks
+    assert "CHUNK 0 CONTENT" in prompt
+    assert "CHUNK 1 CONTENT" in prompt
     assert "CHUNK 2 CONTENT" in prompt
     assert "CHUNK 3 CONTENT" in prompt
     
-    # Should NOT include 0 and 1 (Sliding window check)
-    assert "CHUNK 0 CONTENT" not in prompt
-    assert "CHUNK 1 CONTENT" not in prompt
+    # Check for CoT instructions
+    assert "思考" in prompt or "分析" in prompt or "逻辑" in prompt
+
+def test_parse_transcription_response_cot():
+    """Test parsing JSON preceded by Chain-of-Thought text."""
+    response = "首先，由于音频提到...因此我分析这是讲X。下面是转写结果：\n```json\n[{\"speaker_id\": \"S1\", \"text\": \"Hello\"}]\n```"
+    parsed = parse_transcription_response(response)
+    assert len(parsed) == 1
+    assert parsed[0]["speaker_id"] == "S1"
+
+def test_parse_transcription_response_cot_no_markdown():
+    """Test parsing JSON preceded by CoT text without markdown blocks."""
+    response = "I think the speaker is S2 because... So here is the array: [{\"speaker_id\": \"S2\", \"text\": \"World\"}]"
+    parsed = parse_transcription_response(response)
+    assert len(parsed) == 1
+    assert parsed[0]["speaker_id"] == "S2"
 
 def test_parse_transcription_response_json():
     """Test parsing a clean JSON response."""
