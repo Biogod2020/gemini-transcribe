@@ -21,8 +21,8 @@
     - [x] **Implement Feature**: Update the prompt in `app/transcriber.py` to instruct the model to "think step-by-step", analyze the context logically, and output its reasoning before the final JSON block.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Full-Context Injection and SOTA Prompting' (Protocol in workflow.md) [fcce7fa]
 
-## Phase 4: End-to-End Validation
+## Phase 4: End-to-End Validation [checkpoint: e0454da]
 - [x] Task: Verify End-to-End Execution [ce03675]
     - [x] **Write Tests**: Add any necessary integration assertions to ensure the LangGraph state transitions handle the new prompt structure and chunking correctly.
     - [x] **Implement Feature**: Run `test_real_audio.py` against a test audio file to confirm the full pipeline (larger chunks -> enriched memory -> full context + CoT generation -> robust parsing) works without errors.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: End-to-End Validation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: End-to-End Validation' (Protocol in workflow.md) [e0454da]
