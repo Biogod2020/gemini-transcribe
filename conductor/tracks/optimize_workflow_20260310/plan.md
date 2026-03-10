@@ -6,11 +6,11 @@
     - [x] **Implement Feature**: Modify `get_chunks` in `app/vad_processor.py` to adjust `target_chunk_duration_sec` and ensure the slicing logic strictly adheres to the new minimum (420s) and maximum (600s) constraints.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Optimized Audio Chunking (VAD)' (Protocol in workflow.md) [4ad096a]
 
-## Phase 2: Enriched Global Analysis
+## Phase 2: Enriched Global Analysis [checkpoint: 6d4f677]
 - [x] Task: Enhance Global Memory Prompt [ff50bbe]
     - [x] **Write Tests**: Update tests in `tests/test_global_memory.py` to verify the extraction of the richer data structure (e.g., tone, decisions, narrative structure).
     - [x] **Implement Feature**: Update the `self.prompt` string in `app/global_memory_generator.py` to ask for a deeper, more comprehensive analysis of the full audio.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Enriched Global Analysis' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Enriched Global Analysis' (Protocol in workflow.md) [6d4f677]
 
 ## Phase 3: Full-Context Injection and SOTA Prompting
 - [ ] Task: Implement Full-Context Injection
