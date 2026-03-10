@@ -13,12 +13,12 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Enriched Global Analysis' (Protocol in workflow.md) [6d4f677]
 
 ## Phase 3: Full-Context Injection and SOTA Prompting
-- [ ] Task: Implement Full-Context Injection
-    - [ ] **Write Tests**: Update tests in `tests/test_transcriber.py` to verify that the `build_transcription_prompt` function utilizes the entire `processed_chunks` array instead of just the last two.
-    - [ ] **Implement Feature**: Modify `app/transcriber.py` to remove the sliding window slicing (`context_chunks = processed_chunks[-2:]`) and map the entire history into the prompt text.
-- [ ] Task: Implement Chain-of-Thought (CoT) Prompting
-    - [ ] **Write Tests**: Update tests in `tests/test_transcriber.py` to ensure `parse_transcription_response` can successfully extract the JSON array even if it is preceded by an unstructured "thinking" block.
-    - [ ] **Implement Feature**: Update the prompt in `app/transcriber.py` to instruct the model to "think step-by-step", analyze the context logically, and output its reasoning before the final JSON block.
+- [x] Task: Implement Full-Context Injection [0e6e80a]
+    - [x] **Write Tests**: Update tests in `tests/test_transcriber.py` to verify that the `build_transcription_prompt` function utilizes the entire `processed_chunks` array instead of just the last two.
+    - [x] **Implement Feature**: Modify `app/transcriber.py` to remove the sliding window slicing (`context_chunks = processed_chunks[-2:]`) and map the entire history into the prompt text.
+- [x] Task: Implement Chain-of-Thought (CoT) Prompting [0e6e80a]
+    - [x] **Write Tests**: Update tests in `tests/test_transcriber.py` to ensure `parse_transcription_response` can successfully extract the JSON array even if it is preceded by an unstructured "thinking" block.
+    - [x] **Implement Feature**: Update the prompt in `app/transcriber.py` to instruct the model to "think step-by-step", analyze the context logically, and output its reasoning before the final JSON block.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Full-Context Injection and SOTA Prompting' (Protocol in workflow.md)
 
 ## Phase 4: End-to-End Validation
