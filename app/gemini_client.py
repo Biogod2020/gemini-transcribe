@@ -4,8 +4,9 @@ import httpx
 from typing import Tuple, Dict, Any
 
 class GeminiClient:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model: str = "gemini-3.1-flash-lite-preview"):
         self.api_key = api_key
+        self.model = model
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
         self.upload_url = "https://generativelanguage.googleapis.com/upload/v1beta/files"
 
@@ -25,7 +26,6 @@ class GeminiClient:
         metadata = {"file": {"display_name": display_name}}
         
         async with httpx.AsyncClient() as client:
-            # 1. Start the resumable upload
             resp = await client.post(
                 f"{self.upload_url}?key={self.api_key}",
                 headers=headers,
@@ -34,7 +34,6 @@ class GeminiClient:
             resp.raise_for_status()
             upload_url = resp.headers["X-Goog-Upload-URL"]
             
-            # 2. Upload the actual file content
             resp = await client.put(
                 upload_url,
                 headers={
@@ -72,7 +71,7 @@ class GeminiClient:
         Call Gemini generateContent with a file URI and a prompt.
         Expects JSON output from the model.
         """
-        url = f"{self.base_url}/models/gemini-3.0-flash-preview:generateContent?key={self.api_key}"
+        url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
         
         payload = {
             "generationConfig": {
@@ -95,4 +94,23 @@ class GeminiClient:
             
             result = resp.json()
             text_response = result["candidates"][0]["content"]["parts"][0]["text"]
-            return json.loads(text_response)
+            try:
+                return json.loads(text_response)
+            except json.JSONDecodeError:
+                # Try to clean up markdown blocks if present
+                import re
+                json_match = re.search(r"```(?:json)?\s*(.*?)\s*```", text_response, re.DOTALL)
+                if json_match:
+                    try:
+                        return json.loads(json_match.group(1))
+                    except json.JSONDecodeError:
+                        pass
+                # Last resort fallback if still fails
+                try:
+                    start = text_response.find('[') if text_response.find('[') != -1 else text_response.find('{')
+                    end = text_response.rfind(']') if text_response.rfind(']') != -1 else text_response.rfind('}')
+                    if start != -1 and end != -1:
+                        return json.loads(text_response[start:end+1])
+                except json.JSONDecodeError:
+                    pass
+                return text_response

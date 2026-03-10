@@ -44,10 +44,10 @@ async def test_poll_file_state():
 @pytest.mark.asyncio
 async def test_generate_content():
     """Test content generation with a file URI."""
-    client = GeminiClient(api_key="fake_key")
+    client = GeminiClient(api_key="fake_key", model="gemini-3.1-flash-lite-preview")
     
     with respx.mock:
-        respx.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash-preview:generateContent?key=fake_key").respond(
+        respx.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=fake_key").respond(
             200, 
             json={"candidates": [{"content": {"parts": [{"text": '{"theme": "test"}'}]}}]}
         )
