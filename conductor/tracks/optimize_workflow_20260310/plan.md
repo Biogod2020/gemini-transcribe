@@ -7,9 +7,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Optimized Audio Chunking (VAD)' (Protocol in workflow.md) [4ad096a]
 
 ## Phase 2: Enriched Global Analysis
-- [ ] Task: Enhance Global Memory Prompt
-    - [ ] **Write Tests**: Update tests in `tests/test_global_memory.py` to verify the extraction of the richer data structure (e.g., tone, decisions, narrative structure).
-    - [ ] **Implement Feature**: Update the `self.prompt` string in `app/global_memory_generator.py` to ask for a deeper, more comprehensive analysis of the full audio.
+- [x] Task: Enhance Global Memory Prompt [ff50bbe]
+    - [x] **Write Tests**: Update tests in `tests/test_global_memory.py` to verify the extraction of the richer data structure (e.g., tone, decisions, narrative structure).
+    - [x] **Implement Feature**: Update the `self.prompt` string in `app/global_memory_generator.py` to ask for a deeper, more comprehensive analysis of the full audio.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Enriched Global Analysis' (Protocol in workflow.md)
 
 ## Phase 3: Full-Context Injection and SOTA Prompting
