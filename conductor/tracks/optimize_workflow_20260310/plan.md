@@ -1,9 +1,9 @@
 # Implementation Plan: Optimize Transcription Workflow
 
 ## Phase 1: Optimized Audio Chunking (VAD)
-- [ ] Task: Update VAD logic to enforce 7-10 minute chunk boundaries
-    - [ ] **Write Tests**: Create or update tests in `tests/test_vad.py` to verify chunks are generated between 7 and 10 minutes based on natural silence points.
-    - [ ] **Implement Feature**: Modify `get_chunks` in `app/vad_processor.py` to adjust `target_chunk_duration_sec` and ensure the slicing logic strictly adheres to the new minimum (420s) and maximum (600s) constraints.
+- [x] Task: Update VAD logic to enforce 7-10 minute chunk boundaries [71b167e]
+    - [x] **Write Tests**: Create or update tests in `tests/test_vad.py` to verify chunks are generated between 7 and 10 minutes based on natural silence points.
+    - [x] **Implement Feature**: Modify `get_chunks` in `app/vad_processor.py` to adjust `target_chunk_duration_sec` and ensure the slicing logic strictly adheres to the new minimum (420s) and maximum (600s) constraints.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Optimized Audio Chunking (VAD)' (Protocol in workflow.md)
 
 ## Phase 2: Enriched Global Analysis
