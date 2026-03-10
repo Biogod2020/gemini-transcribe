@@ -10,7 +10,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: API Updates' (Protocol in workflow.md) [ba048fc]
 
 ## Phase 2: Prompt Refactoring
-- [ ] Task: Refactor `app/transcriber.py` Prompt Template
+- [~] Task: Refactor `app/transcriber.py` Prompt Template
     - [ ] **Write Tests**: Verify the new prompt generator doesn't contain the "thinking block" instructions.
     - [ ] **Implement Feature**: 
         - Replace CoT commands with a "Guidelines" section (`【转写准则】`).
@@ -30,3 +30,5 @@
     - [ ] **Implement Feature**: Run `test_real_audio.py` with `gemini-3-flash-preview` and `use-local-proxy`.
     - [ ] **Verification**: Ensure Chunk 1 is complete and all thoughts are logged correctly.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Final Validation' (Protocol in workflow.md)
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions 4cb9539
