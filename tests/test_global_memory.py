@@ -12,7 +12,10 @@ async def test_generate_global_memory():
     mock_client.generate_content.return_value = {
         "theme": "AI and Speech",
         "speakers": [{"id": "Speaker_A", "characteristics": "Calm voice"}],
-        "glossary": ["LLM", "VAD"]
+        "glossary": ["LLM", "VAD"],
+        "tone": "Professional and informative",
+        "key_decisions": ["Adopt Gemini 3.1", "Use Silero VAD"],
+        "narrative_structure": "Introduction -> Technical deep dive -> Conclusion"
     }
     
     generator = GlobalMemoryGenerator(mock_client)
@@ -21,6 +24,9 @@ async def test_generate_global_memory():
     assert memory["theme"] == "AI and Speech"
     assert len(memory["speakers"]) == 1
     assert "LLM" in memory["glossary"]
+    assert "tone" in memory
+    assert "key_decisions" in memory
+    assert "narrative_structure" in memory
     
     # Verify calls
     mock_client.upload_file.assert_called_once()
