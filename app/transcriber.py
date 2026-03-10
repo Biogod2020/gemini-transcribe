@@ -4,8 +4,7 @@ from typing import Dict, Any, List
 
 def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: List[Dict[str, Any]]) -> str:
     """
-    Builds the transcription prompt containing global memory and ALL previous local context.
-    Instructs the model to use Chain-of-Thought reasoning.
+    Builds a SOTA-level transcription prompt that is domain-agnostic and relies on internal reasoning.
     """
     if isinstance(global_memory, list) and len(global_memory) > 0:
         global_memory = global_memory[0]
@@ -16,33 +15,40 @@ def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: 
     
     context_text = ""
     if processed_chunks:
-        context_text = "【历史转录全文（仅供参考对齐上下文，切勿重复转写）】\n"
+        context_text = "## 历史对齐上下文 (仅供参考衔接)\n"
         for chunk in processed_chunks:
             context_text += f"--- 第 {chunk['chunk_index']} 段 ---\n{chunk.get('transcript', '')}\n"
     else:
-        context_text = "【历史转录全文】\n（这是第一段音频，无历史转录）"
+        context_text = "（这是音频的第一部分，尚无历史转录参考）"
 
-    prompt = f"""【系统级全局记忆】
-核心议题：{theme}
-专有名词表：{glossary}
-说话人画像：{speakers}
+    prompt = f"""# 角色：专业多语种语音转录与语义对齐专家
 
+## 1. 核心任务
+你的任务是根据提供的音频片段，输出高准确度的逐字稿。你必须利用提供的“全局记忆”和“历史上下文”来确保术语一致、说话人标识准确且逻辑连贯。
+
+## 2. 基础参考信息
+- **全局核心议题**：{theme}
+- **术语/实体定义**：{glossary}
+- **说话人画像参考**：{speakers}
+
+## 3. 上下文衔接参考
 {context_text}
 
-【当前任务】
-请紧接上一段的结尾（如果有的话），转写本次音频流。
-在进行转写前，请先进行一步一步的思考和分析（Chain-of-Thought）：
-1. 结合【系统级全局记忆】和【历史转录全文】的逻辑，理解当前音频段落的上下文和语境。
-2. 识别当前说话人的意图，确保对话逻辑连贯，不要生硬地字对字直译，而要根据逻辑理顺内容，但必须忠于原意。
-3. 严格使用【系统级全局记忆】中的说话人 id。
+## 4. 转录理解准则 (SOTA Guidelines)
+- **语义锚定**：充分利用历史上下文来消解当前音频中的代词指向、话题跳跃和专有名词。
+- **声学鲁棒性**：针对含糊不清、带口音或含噪音的语音，必须结合语义逻辑和“全局核心议题”进行合理的上下文推断，严禁生拼硬造不符合逻辑的词汇。
+- **语流规范化**：在忠实于原意的前提下，确保转录文本符合人类表达的句法逻辑，消除因语音断断续续导致的语法破碎感。
+- **标识持久化**：严格遵循说话人画像中的 ID。严禁在同一段对话中随意更改同一说话人的标识。
 
-请在思考结束后，输出 JSON 格式的数组，每个元素包含 'speaker_id' 和 'text' 两个字段。
-示例输出结构：
-首先，根据上文的语境...这段音频主要讨论...
+## 5. 输出约束
+- **格式要求**：必须输出一个且仅输出一个 JSON 格式的数组。
+- **结构定义**：数组中的每个对象必须包含 `speaker_id` 和 `text` 字段。
+- **逻辑隔离**：不要在 JSON 之外包含任何解释、前言或总结。所有推理逻辑应当在模型的内部思考环节（Reasoning Phase）完成。
+
+请紧接前文，开始当前片段的转录：
 ```json
 [
-  {{"speaker_id": "SPEAKER_01", "text": "你好，今天我们讨论一下..."}},
-  {{"speaker_id": "SPEAKER_02", "text": "好的，我先开始。"}}
+  {{"speaker_id": "SPEAKER_ID", "text": "转写内容..."}}
 ]
 ```"""
 
@@ -50,28 +56,32 @@ def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: 
 
 def parse_transcription_response(response: str) -> List[Dict[str, str]]:
     """
-    Parses the JSON transcription result from Gemini, handling Markdown code blocks.
+    Robustly parses the JSON array from the model's response.
+    This is now a secondary fallback since GeminiClient handles the primary parsing.
     """
-    # Try to extract JSON from markdown code blocks if present
-    json_match = re.search(r"```(?:json)?\s*(.*?)```", response, re.DOTALL)
-    if json_match:
-        response = json_match.group(1).strip()
-    else:
-        # Fallback: find the first '[' and last ']'
-        start = response.find('[')
-        end = response.rfind(']')
-        if start != -1 and end != -1:
-            response = response[start:end+1]
-    
+    # 1. Try direct JSON parse
     try:
         data = json.loads(response)
         if isinstance(data, list):
             return data
-        return []
     except json.JSONDecodeError:
-        # If still fails, try some basic cleanup (like trailing commas)
+        pass
+
+    # 2. Try to find JSON block via regex
+    json_match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", response, re.DOTALL)
+    if json_match:
         try:
-            # Very aggressive cleanup could go here, but for now just return empty
-            return []
-        except:
-            return []
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # 3. Last ditch attempt: find the outer brackets
+    start = response.find('[')
+    end = response.rfind(']')
+    if start != -1 and end != -1:
+        try:
+            return json.loads(response[start:end+1])
+        except json.JSONDecodeError:
+            pass
+
+    return []

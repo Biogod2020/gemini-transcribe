@@ -18,26 +18,20 @@ def test_build_prompt_no_history():
     assert "Speaker_A" in prompt
     assert "无历史转录" in prompt
 
-def test_build_prompt_full_context():
-    """Test that prompt includes ALL previous chunks."""
+def test_build_prompt_refactored():
+    """Test that the refactored prompt contains guidelines but NO manual CoT instructions."""
     global_memory = {"theme": "Full Context Test", "glossary": [], "speakers": []}
-    processed_chunks = [
-        {"chunk_index": 0, "transcript": "CHUNK 0 CONTENT"},
-        {"chunk_index": 1, "transcript": "CHUNK 1 CONTENT"},
-        {"chunk_index": 2, "transcript": "CHUNK 2 CONTENT"},
-        {"chunk_index": 3, "transcript": "CHUNK 3 CONTENT"}
-    ]
+    processed_chunks = [{"chunk_index": 0, "transcript": "CHUNK 0"}]
     
     prompt = build_transcription_prompt(global_memory, processed_chunks)
     
-    # Should include ALL chunks
-    assert "CHUNK 0 CONTENT" in prompt
-    assert "CHUNK 1 CONTENT" in prompt
-    assert "CHUNK 2 CONTENT" in prompt
-    assert "CHUNK 3 CONTENT" in prompt
+    # Should contain guidelines/standards
+    assert "转录理解准则" in prompt
     
-    # Check for CoT instructions
-    assert "思考" in prompt or "分析" in prompt or "逻辑" in prompt
+    # Should NOT contain manual CoT "think step by step" instructions
+    assert "一步一步的思考和分析" not in prompt
+    assert "Chain-of-Thought" not in prompt
+    assert "思考结束后" not in prompt
 
 def test_parse_transcription_response_cot():
     """Test parsing JSON preceded by Chain-of-Thought text."""
