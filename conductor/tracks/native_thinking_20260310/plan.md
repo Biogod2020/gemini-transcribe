@@ -1,9 +1,9 @@
 # Implementation Plan: Native Thinking Mode & Prompt Optimization
 
 ## Phase 1: API & Client Updates
-- [ ] Task: Update `GeminiClient` for native Thinking Mode
-    - [ ] **Write Tests**: Create a mock response with `thought: true` in the `parts` array to verify extraction logic.
-    - [ ] **Implement Feature**: 
+- [x] Task: Update `GeminiClient` for native Thinking Mode [0b284fb]
+    - [x] **Write Tests**: Create a mock response with `thought: true` in the `parts` array to verify extraction logic.
+    - [x] **Implement Feature**: 
         - Add `thinking_level` to `Config`.
         - Update `generate_content` payload to include `thinking_config`.
         - Modify response parsing to separate `thought` parts from `text` parts.
