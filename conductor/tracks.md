@@ -10,5 +10,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Optimize transcription workflow: richer global analysis, full-context injection, 7-10m chunking, and CoT prompting.**
+- [x] **Track: Optimize transcription workflow: richer global analysis, full-context injection, 7-10m chunking, and CoT prompting.**
   *Link: [./tracks/optimize_workflow_20260310/](./tracks/optimize_workflow_20260310/)*
