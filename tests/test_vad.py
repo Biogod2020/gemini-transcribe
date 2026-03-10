@@ -49,3 +49,36 @@ def test_chunking_logic(mocker):
     assert len(chunks) == 2
     assert chunks[0].shape[0] == 40000
     assert chunks[1].shape[0] == 40000
+
+def test_chunking_logic_with_bounds(mocker):
+    """Test chunking logic adheres to min (7m) and max (10m) bounds."""
+    processor = VADProcessor()
+    
+    sr = 16000
+    # Simulate a 25-minute audio (1500 seconds)
+    total_duration_sec = 1500
+    audio = np.zeros(total_duration_sec * sr, dtype=np.float32)
+    
+    # Mock speech segments every 1 minute (60s) with brief silences in between
+    segments = []
+    for i in range(25):
+        start = i * 60 * sr
+        end = (i * 60 + 58) * sr # 2 seconds of silence
+        segments.append({'start': start, 'end': end})
+        
+    processor.get_speech_timestamps = MagicMock(return_value=segments)
+    
+    # Should chunk between 7 mins (420s) and 10 mins (600s)
+    # With silences every minute, it should ideally split around the 8, 9, or 10 min mark.
+    chunks = processor.get_chunks(audio, sampling_rate=sr)
+    
+    assert len(chunks) > 0
+    # The first few chunks must be between 7 and 10 mins (420s to 600s)
+    # The last chunk might be shorter, so we don't test the min bound on the very last one.
+    for i, chunk in enumerate(chunks[:-1]):
+        duration_sec = len(chunk) / sr
+        assert 420 <= duration_sec <= 600, f"Chunk {i} duration {duration_sec}s is out of bounds (7-10 mins)"
+    
+    # Total duration should match
+    total_chunked_samples = sum(len(c) for c in chunks)
+    assert total_chunked_samples == len(audio)
