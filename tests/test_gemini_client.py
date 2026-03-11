@@ -70,19 +70,18 @@ async def test_generate_content_payload_structure():
     with respx.mock:
         def match_payload(request):
             payload = json.loads(request.content)
-            # Check for camelCase
-            gen_config = payload.get("generationConfig", {})
-            assert "responseMimeType" in gen_config
-            assert "thinkingConfig" in gen_config
-            assert gen_config["thinkingConfig"]["includeProcess"] is True
-            
+            # Check for snake_case
+            gen_config = payload.get("generation_config", {})
+            assert "response_mime_type" in gen_config
+            assert "thinking_config" in gen_config
+            assert gen_config["thinking_config"]["include_thoughts"] is True
+
             # Check content structure
             assert payload["contents"][0]["role"] == "user"
             parts = payload["contents"][0]["parts"]
             assert parts[0]["text"] == "summarize this"
-            assert "fileData" in parts[1]
-            assert parts[1]["fileData"]["fileUri"] == "https://file.uri"
-            
+            assert "file_data" in parts[1]
+            assert parts[1]["file_data"]["file_uri"] == "https://file.uri"            
             return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "{}"}]}}]})
 
         respx.post(re.compile(r".*generateContent.*")).mock(side_effect=match_payload)

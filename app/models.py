@@ -2,8 +2,10 @@ from typing import List, Optional, Any, Union
 from pydantic import BaseModel, Field, ConfigDict
 
 class ThinkingConfig(BaseModel):
-    include_process: bool = Field(default=True, alias="includeProcess")
-    thinking_budget: int = Field(default=1024, alias="thinkingBudget")
+    # Both official Gemini 3.x v1beta and the local proxy prefer include_thoughts
+    include_thoughts: bool = Field(default=True, alias="include_thoughts")
+    
+    thinking_budget: Optional[int] = Field(default=None, alias="thinkingBudget")
     thinking_level: Optional[str] = Field(default=None, alias="thinkingLevel")
     
     model_config = ConfigDict(populate_by_name=True)

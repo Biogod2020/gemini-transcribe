@@ -30,17 +30,25 @@ async def main():
         action="store_true",
         help="Use local API endpoint at http://localhost:8888/v1beta and inlineData (bypasses File API)."
     )
+    parser.add_argument(
+        "--use-inline-data",
+        action="store_true",
+        help="Force the use of inlineData for sending audio content."
+    )
     args = parser.parse_args()
 
     # 1. Configuration
     data_dir = "/home/jiahao/code_workspace/gemini-transcribe/data"
     output_dir = "/home/jiahao/code_workspace/gemini-transcribe/output"
-    audio_file = os.path.join(data_dir, "2026年01月26日 下午02点18分.m4a")
+    audio_file = os.path.join(data_dir, "merged_full_audio.m4a")
     
     # Apply local proxy overrides if requested
     if args.use_local_proxy:
         config.BASE_URL = "http://localhost:8888/v1beta"
         config.API_KEY = "123456"
+        config.USE_INLINE_DATA = True
+        
+    if args.use_inline_data:
         config.USE_INLINE_DATA = True
     
     # API Key handling
