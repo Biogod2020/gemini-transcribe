@@ -1,0 +1,30 @@
+# Implementation Plan: Large Audio Processing and Model Comparison
+
+## Phase 1: Audio Merging Utility [checkpoint: 01507db]
+- [x] Task: Implement Audio Merging Script [7a3f854]
+    - [x] Create `scripts/merge_audio.py` to sort and merge segments using FFmpeg.
+    - [x] Write unit tests in `tests/test_merger.py` to verify sorting and merging logic.
+    - [x] Verify that the merged file `data/merged_full_audio.m4a` is correctly generated.
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Audio Merging Utility' (Protocol in workflow.md)
+
+## Phase 2: Execution - Gemini 3 Flash (Local) [checkpoint: 2d85585]
+- [x] Task: Run STT Workflow with Gemini 3 Flash [ba403dc]
+    - [x] Configure `GeminiClient` for local proxy (`http://localhost:8888/v1beta`, key: `123456`).
+    - [x] Process `data/merged_full_audio.m4a` using `gemini-3-flash-preview`.
+    - [x] Export results to `output/gemini_3_flash/`.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Execution - Gemini 3 Flash (Local)' (Protocol in workflow.md)
+
+## Phase 3: Execution - Gemini 3.1 Flash Lite (Official) [checkpoint: b8f1682]
+- [x] Task: Run STT Workflow with Gemini 3.1 Flash Lite [b863ba3]
+    - [x] Configure `GeminiClient` for official Google API.
+    - [x] Process `data/merged_full_audio.m4a` using `gemini-3.1-flash-lite-preview`.
+    - [x] Export results to `output/gemini_3_1_lite/`.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Execution - Gemini 3.1 Flash Lite (Official)' (Protocol in workflow.md)
+
+## Phase 4: Comparison and Reporting [checkpoint: c94e0d8]
+- [x] Task: Qualitative Analysis [41d6262]
+    - [x] Compare `output/gemini_3_flash/` and `output/gemini_3_1_lite/` transcripts.
+    - [x] Identify discrepancies in technical terms, speaker consistency, and sentence structure.
+- [x] Task: Generate Comparison Report [41d6262]
+    - [x] Create `docs/comparison_report_large_audio.md` with detailed narrative findings.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Comparison and Reporting' (Protocol in workflow.md)
