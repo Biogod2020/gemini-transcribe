@@ -4,6 +4,7 @@
 - **Primary Language**: **Python (managed by uv)** for high-performance audio processing and AI orchestration.
 - **Workflow Orchestration**: **LangGraph (Python)** or **FastAPI** to manage the core state machine and sliding window transcription logic.
 - **Environment Management**: **uv** for fast, reliable, and deterministic project and environment management.
+- **Data Modeling**: **Pydantic** for request/response validation and serialization.
 
 ## AI & Audio Processing
 - **AI Model**: `gemini-3.1-flash-lite-preview` accessed via direct HTTP RESTful API (using `httpx` or `requests`) to minimize dependencies.

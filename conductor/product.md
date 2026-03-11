@@ -60,7 +60,11 @@
 ```json
 {
   "generationConfig": {
-    "response_mime_type": "application/json"
+    "responseMimeType": "application/json",
+    "thinkingConfig": {
+      "includeProcess": true,
+      "thinkingLevel": "HIGH"
+    }
   },
   "contents": [
     {
@@ -100,7 +104,11 @@
 ```json
 {
   "generationConfig": {
-    "response_mime_type": "application/json"
+    "responseMimeType": "application/json",
+    "thinkingConfig": {
+      "includeProcess": true,
+      "thinkingLevel": "HIGH"
+    }
   },
   "system_instruction": {
     "parts": [
@@ -152,7 +160,7 @@
 ## 4. 工程师避坑指南 (Critical Notes for Devs)
 
 1. **文件 URI 有效期：** Google File API 上传的 `fileUri` 默认有 48 小时的生命周期，且对于大文件，上传后可能需要轮询检查 `state === 'ACTIVE'` 才能用于推理（通常在几秒内就绪）。
-2. **强制 JSON 输出：** 模块二 and 模块三都在 Payload 中明确设置了 `response_mime_type: "application/json"`。这能极大降低工程师写正则表达式解析文本的痛苦，确保数据结构化流转。
+2. **强制 JSON 输出：** 模块二 and 模块三都在 Payload 中明确设置了 `responseMimeType: "application/json"`。这能极大降低工程师写正则表达式解析文本的痛苦，确保数据结构化流转。
 3. **速率控制：** API 请求之间必须做好 `await`，因为后一个 Chunk 的转写强依赖于前两个 Chunk 的输出结果。如果遇到 HTTP 429 报错，请实现指数退避（Exponential Backoff）重试机制。
 
 ---
