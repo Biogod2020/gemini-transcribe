@@ -7,9 +7,9 @@
 
 ## Phase 2: Implementation of Benchmarking Script [checkpoint: b930ae9]
 - [x] Task: Create `scripts/benchmark.py` with HF streaming integration. [e4bfc8a]
-- [ ] Task: Re-implement `scripts/benchmark.py` to invoke the full `STTGraph` workflow.
-- [ ] Task: Implement the model comparison loop (Gemini 3 Flash vs 3.1 Flash Lite).
-- [ ] Task: Add ground-truth alignment and WER calculation logic for long-form audio.
+- [x] Task: Re-implement `scripts/benchmark.py` to invoke the full `STTGraph` workflow. [8e5ed03]
+- [x] Task: Implement the model comparison loop (Gemini 3 Flash vs 3.1 Flash Lite). [8e5ed03]
+- [x] Task: Add ground-truth alignment and WER calculation logic for long-form audio. [8e5ed03]
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
 
 ## Phase 3: Validation & Baseline Run
