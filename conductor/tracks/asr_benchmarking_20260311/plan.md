@@ -2,7 +2,7 @@
 
 ## Phase 1: Dependency & Environment Setup
 - [x] Task: Update `pyproject.toml` with benchmarking dependencies (`datasets`, `evaluate`, `jiwer`, `soundfile`). [dfcdd04]
-- [ ] Task: Implement `app/utils.py` text normalization helpers.
+- [x] Task: Implement `app/utils.py` text normalization helpers. [9134bd3]
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
 ## Phase 2: Implementation of Benchmarking Script
