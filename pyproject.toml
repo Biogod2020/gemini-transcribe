@@ -21,3 +21,8 @@ dependencies = [
     "silero-vad>=6.2.1",
     "soundfile>=0.13.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.0.0",
+]

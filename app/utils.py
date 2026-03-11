@@ -79,3 +79,25 @@ def extract_content_and_thoughts(response_payload: Dict[str, Any]) -> Dict[str, 
     parsed_data = parse_json_response(combined_text)
     
     return {"data": parsed_data, "thought": full_thoughts}
+
+def normalize_text(text: Optional[str]) -> str:
+    """
+    Normalizes text for ASR evaluation (WER).
+    - Lowercases
+    - Removes punctuation
+    - Collapses multiple spaces
+    """
+    if not text:
+        return ""
+    
+    # Lowercase
+    text = text.lower()
+    
+    # Remove punctuation
+    text = re.sub(r'[^\w\s]', '', text)
+    
+    # Collapse multiple spaces and strip
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    return text
+
