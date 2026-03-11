@@ -12,7 +12,13 @@
 - [x] Task: Add ground-truth alignment and WER calculation logic for long-form audio. [8e5ed03]
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
 
-## Phase 3: Validation & Baseline Run
+## Phase 3: Audio Normalization Utility
+- [ ] Task: Implement audio normalization in `app/utils.py` or `scripts/benchmark.py`.
+- [ ] Task: Use `pydub` or `FFmpeg` to standardize volume (Peak Normalization).
+- [ ] Task: Ensure all benchmark samples are converted to 16kHz Mono.
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: Audio Normalization' (Protocol in workflow.md)
+
+## Phase 4: Validation & Baseline Run
 - [ ] Task: Run the benchmark on 3 random long-form samples from Earnings-22.
 - [ ] Task: Generate the official comparative report in `docs/benchmarks/`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Validation' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 4: Validation' (Protocol in workflow.md)

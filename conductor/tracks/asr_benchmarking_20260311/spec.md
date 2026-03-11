@@ -14,7 +14,10 @@ This track implements a standardized benchmarking suite to evaluate the `gemini-
 2. **Evaluation Metrics**:
    - Calculate Word Error Rate (WER) using the `evaluate` library.
    - Compare the concatenated transcript from our sliding window workflow against the official ground truth transcript provided in the dataset.
-3. **Reporting**:
+3. **Audio Preprocessing & Normalization**:
+   - Implement loudness normalization (e.g., Peak or LUFS normalization) to ensure consistent volume levels across different audio sources.
+   - Standardize sample rate (16kHz) and channel count (Mono) before sending to the model.
+4. **Reporting**:
    - Generate a JSON result for each run in `output/benchmarks/`.
    - Produce a comparative Markdown report summarizing the WER and qualitative strengths/weaknesses observed during the 1-hour processing runs.
 
