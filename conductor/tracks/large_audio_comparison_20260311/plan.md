@@ -14,17 +14,17 @@
     - [x] Export results to `output/gemini_3_flash/`.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Execution - Gemini 3 Flash (Local)' (Protocol in workflow.md)
 
-## Phase 3: Execution - Gemini 3.1 Flash Lite (Official)
-- [ ] Task: Run STT Workflow with Gemini 3.1 Flash Lite
-    - [ ] Configure `GeminiClient` for official Google API.
-    - [ ] Process `data/merged_full_audio.m4a` using `gemini-3.1-flash-lite-preview`.
-    - [ ] Export results to `output/gemini_3_1_lite/`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Execution - Gemini 3.1 Flash Lite (Official)' (Protocol in workflow.md)
+## Phase 3: Execution - Gemini 3.1 Flash Lite (Official) [checkpoint: b8f1682]
+- [x] Task: Run STT Workflow with Gemini 3.1 Flash Lite [b863ba3]
+    - [x] Configure `GeminiClient` for official Google API.
+    - [x] Process `data/merged_full_audio.m4a` using `gemini-3.1-flash-lite-preview`.
+    - [x] Export results to `output/gemini_3_1_lite/`.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Execution - Gemini 3.1 Flash Lite (Official)' (Protocol in workflow.md)
 
-## Phase 4: Comparison and Reporting
-- [ ] Task: Qualitative Analysis
-    - [ ] Compare `output/gemini_3_flash/` and `output/gemini_3_1_lite/` transcripts.
-    - [ ] Identify discrepancies in technical terms, speaker consistency, and sentence structure.
-- [ ] Task: Generate Comparison Report
-    - [ ] Create `docs/comparison_report_large_audio.md` with detailed narrative findings.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Comparison and Reporting' (Protocol in workflow.md)
+## Phase 4: Comparison and Reporting [checkpoint: c94e0d8]
+- [x] Task: Qualitative Analysis [41d6262]
+    - [x] Compare `output/gemini_3_flash/` and `output/gemini_3_1_lite/` transcripts.
+    - [x] Identify discrepancies in technical terms, speaker consistency, and sentence structure.
+- [x] Task: Generate Comparison Report [41d6262]
+    - [x] Create `docs/comparison_report_large_audio.md` with detailed narrative findings.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Comparison and Reporting' (Protocol in workflow.md)
