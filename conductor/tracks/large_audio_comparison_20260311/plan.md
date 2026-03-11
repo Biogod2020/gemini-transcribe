@@ -7,12 +7,12 @@
     - [x] Verify that the merged file `data/merged_full_audio.m4a` is correctly generated.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Audio Merging Utility' (Protocol in workflow.md)
 
-## Phase 2: Execution - Gemini 3 Flash (Local)
-- [ ] Task: Run STT Workflow with Gemini 3 Flash
-    - [ ] Configure `GeminiClient` for local proxy (`http://localhost:8888/v1beta`, key: `123456`).
-    - [ ] Process `data/merged_full_audio.m4a` using `gemini-3-flash-preview`.
-    - [ ] Export results to `output/gemini_3_flash/`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Execution - Gemini 3 Flash (Local)' (Protocol in workflow.md)
+## Phase 2: Execution - Gemini 3 Flash (Local) [checkpoint: 2d85585]
+- [x] Task: Run STT Workflow with Gemini 3 Flash [ba403dc]
+    - [x] Configure `GeminiClient` for local proxy (`http://localhost:8888/v1beta`, key: `123456`).
+    - [x] Process `data/merged_full_audio.m4a` using `gemini-3-flash-preview`.
+    - [x] Export results to `output/gemini_3_flash/`.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Execution - Gemini 3 Flash (Local)' (Protocol in workflow.md)
 
 ## Phase 3: Execution - Gemini 3.1 Flash Lite (Official)
 - [ ] Task: Run STT Workflow with Gemini 3.1 Flash Lite
