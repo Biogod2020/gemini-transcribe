@@ -1,4 +1,4 @@
-# Implementation Plan: Standardized ASR Benchmarking Suite
+# Implementation Plan: Standardized ASR Benchmarking Suite (Earnings-22)
 
 ## Phase 1: Dependency & Environment Setup [checkpoint: 48b3669]
 - [x] Task: Update `pyproject.toml` with benchmarking dependencies (`datasets`, `evaluate`, `jiwer`, `soundfile`). [dfcdd04]
@@ -7,11 +7,12 @@
 
 ## Phase 2: Implementation of Benchmarking Script [checkpoint: b930ae9]
 - [x] Task: Create `scripts/benchmark.py` with HF streaming integration. [e4bfc8a]
-- [x] Task: Implement the core loop for sending audio to `GeminiClient` and computing WER. [e4bfc8a]
-- [x] Task: Add result persistence (saving to `output/benchmarks/`). [e4bfc8a]
-- [x] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
+- [ ] Task: Re-implement `scripts/benchmark.py` to invoke the full `STTGraph` workflow.
+- [ ] Task: Implement the model comparison loop (Gemini 3 Flash vs 3.1 Flash Lite).
+- [ ] Task: Add ground-truth alignment and WER calculation logic for long-form audio.
+- [ ] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
 
 ## Phase 3: Validation & Baseline Run
-- [ ] Task: Run a benchmark on the first 100 samples of LibriSpeech.
-- [ ] Task: Generate the first official baseline report in `docs/benchmarks/`.
+- [ ] Task: Run the benchmark on 3 random long-form samples from Earnings-22.
+- [ ] Task: Generate the official comparative report in `docs/benchmarks/`.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Validation' (Protocol in workflow.md)
