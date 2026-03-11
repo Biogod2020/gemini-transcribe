@@ -1,6 +1,8 @@
 import pytest
 import httpx
 import respx
+import json
+import re
 from app.gemini_client import GeminiClient
 
 @pytest.mark.asyncio
@@ -59,3 +61,35 @@ async def test_generate_content():
         )
 
         assert response["data"]["theme"] == "test"
+
+@pytest.mark.asyncio
+async def test_generate_content_payload_structure():
+    """Verify that the generated payload uses official camelCase and thinkingConfig."""
+    client = GeminiClient(api_key="fake_key", model="gemini-3.1-flash-lite-preview")
+    
+    with respx.mock:
+        def match_payload(request):
+            payload = json.loads(request.content)
+            # Check for camelCase
+            gen_config = payload.get("generationConfig", {})
+            assert "responseMimeType" in gen_config
+            assert "thinkingConfig" in gen_config
+            assert gen_config["thinkingConfig"]["includeProcess"] is True
+            
+            # Check content structure
+            assert payload["contents"][0]["role"] == "user"
+            parts = payload["contents"][0]["parts"]
+            assert parts[0]["text"] == "summarize this"
+            assert "fileData" in parts[1]
+            assert parts[1]["fileData"]["fileUri"] == "https://file.uri"
+            
+            return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "{}"}]}}]})
+
+        respx.post(re.compile(r".*generateContent.*")).mock(side_effect=match_payload)
+        
+        await client.generate_content(
+            prompt="summarize this",
+            file_uri="https://file.uri",
+            mime_type="audio/mp3"
+        )
+

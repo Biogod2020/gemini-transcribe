@@ -53,9 +53,9 @@ async def test_generate_content_includes_thinking_config():
         def check_request(request):
             payload = json.loads(request.content)
             gen_config = payload.get("generationConfig", {})
-            thinking_config = gen_config.get("thinking_config", {})
-            assert thinking_config.get("thinking_level") == "MEDIUM"
-            assert thinking_config.get("include_thoughts") is True
+            thinking_config = gen_config.get("thinkingConfig", {})
+            assert thinking_config.get("thinkingLevel") == "MEDIUM"
+            assert thinking_config.get("includeProcess") is True
             return respx.MockResponse(200, json={"candidates": [{"content": {"parts": [{"text": "[]"}]}}]})
 
         respx.post(url).mock(side_effect=check_request)

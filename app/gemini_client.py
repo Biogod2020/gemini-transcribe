@@ -5,6 +5,11 @@ import base64
 from typing import Tuple, Dict, Any
 from app.config import config
 
+from app.models import (
+    GenerateContentRequest, GenerationConfig, ThinkingConfig, 
+    Content, Part, InlineData, FileData
+)
+
 class GeminiClient:
     def __init__(self, api_key: str = config.API_KEY, model: str = config.DEFAULT_MODEL, use_inline_data: bool = config.USE_INLINE_DATA, thinking_level: str = config.THINKING_LEVEL):
         self.api_key = api_key
@@ -78,47 +83,44 @@ class GeminiClient:
                 await asyncio.sleep(interval)
         return False
 
-    async def generate_content(self, prompt: str, mime_type: str, file_uri: str = None, audio_content: bytes = None) -> Dict[str, Any]:
+    async def generate_content(self, prompt: str, mime_type: str, file_uri: str = None, audio_content: bytes = None, response_schema: Any = None) -> Dict[str, Any]:
         """
         Call Gemini generateContent with a file URI or inline data and a prompt.
-        Expects JSON output from the model.
+        Handles native thinking and structured output.
         Returns: {"data": parsed_json, "thought": thoughts_string}
         """
         url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
         
-        if self.use_inline_data and audio_content:
-            audio_part = {
-                "inline_data": {
-                    "mime_type": mime_type,
-                    "data": base64.b64encode(audio_content).decode("utf-8")
-                }
-            }
-        else:
-            audio_part = {
-                "file_data": {
-                    "mime_type": mime_type,
-                    "file_uri": file_uri
-                }
-            }
+        parts = [Part(text=prompt)]
         
-        payload = {
-            "generationConfig": {
-                "response_mime_type": "application/json",
-                "thinking_config": {
-                    "include_thoughts": True,
-                    "thinking_level": self.thinking_level
-                }
-            },
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        audio_part
-                    ]
-                }
-            ]
-        }
+        if self.use_inline_data and audio_content:
+            parts.append(Part(inline_data=InlineData(
+                mimeType=mime_type,
+                data=base64.b64encode(audio_content).decode("utf-8")
+            )))
+        elif file_uri:
+            parts.append(Part(file_data=FileData(
+                mimeType=mime_type,
+                fileUri=file_uri
+            )))
+        
+        thinking_config = ThinkingConfig(
+            includeProcess=True,
+            thinkingLevel=self.thinking_level
+        )
+        
+        gen_config = GenerationConfig(
+            responseMimeType="application/json",
+            responseSchema=response_schema,
+            thinkingConfig=thinking_config
+        )
+
+        request = GenerateContentRequest(
+            contents=[Content(role="user", parts=parts)],
+            generationConfig=gen_config
+        )
+        
+        payload = request.model_dump(by_alias=True, exclude_none=True)
         
         async with httpx.AsyncClient(timeout=300.0) as client:
             for attempt in range(3):
@@ -133,28 +135,36 @@ class GeminiClient:
             
             result = resp.json()
             
-            # Extract thoughts and text
-            parts = result["candidates"][0]["content"]["parts"]
+            # Extract thoughts and text (Refined logic based on official API behavior)
+            candidates = result.get("candidates", [])
+            if not candidates:
+                return {"data": [], "thought": "No candidates returned"}
+                
+            parts_resp = candidates[0].get("content", {}).get("parts", [])
             thoughts = []
             text_parts = []
             
-            for part in parts:
+            for part in parts_resp:
+                part_text = part.get("text", "")
+                # Official API uses the 'thought' boolean flag
                 if part.get("thought"):
-                    thoughts.append(part.get("text", ""))
+                    thoughts.append(part_text)
                 else:
-                    text_parts.append(part.get("text", ""))
+                    text_parts.append(part_text)
             
-            full_thoughts = "\n".join(thoughts)
-            text_response = "".join(text_parts)
+            full_thoughts = "\n".join(thoughts).strip()
+            text_response = "".join(text_parts).strip()
             
+            # Print thoughts for real-time logging
             if full_thoughts:
                 print(f"\n--- Model Thought Process ---\n{full_thoughts}\n-----------------------------\n")
             
+            # Parse the final JSON response
             parsed_data = None
             try:
                 parsed_data = json.loads(text_response)
             except json.JSONDecodeError:
-                # Try to clean up markdown blocks if present
+                # Robust extraction if the model still surrounds JSON with text/markdown
                 import re
                 json_match = re.search(r"```(?:json)?\s*(.*?)\s*```", text_response, re.DOTALL)
                 if json_match:
@@ -164,16 +174,17 @@ class GeminiClient:
                         pass
                 
                 if parsed_data is None:
-                    # Last resort fallback if still fails
-                    try:
-                        start = text_response.find('[') if text_response.find('[') != -1 else text_response.find('{')
-                        end = text_response.rfind(']') if text_response.rfind(']') != -1 else text_response.rfind('}')
-                        if start != -1 and end != -1:
+                    # Last resort: find outer brackets
+                    start = text_response.find('[') if text_response.find('[') != -1 else text_response.find('{')
+                    end = text_response.rfind(']') if text_response.rfind(']') != -1 else text_response.rfind('}')
+                    if start != -1 and end != -1:
+                        try:
                             parsed_data = json.loads(text_response[start:end+1])
-                    except json.JSONDecodeError:
-                        pass
+                        except json.JSONDecodeError:
+                            pass
             
             if parsed_data is None:
-                parsed_data = text_response
+                parsed_data = text_response # Fallback to raw text if parsing impossible
                 
             return {"data": parsed_data, "thought": full_thoughts}
+
