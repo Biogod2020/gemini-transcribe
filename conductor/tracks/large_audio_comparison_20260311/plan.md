@@ -1,11 +1,11 @@
 # Implementation Plan: Large Audio Processing and Model Comparison
 
-## Phase 1: Audio Merging Utility
-- [ ] Task: Implement Audio Merging Script
-    - [ ] Create `scripts/merge_audio.py` to sort and merge segments using FFmpeg.
-    - [ ] Write unit tests in `tests/test_merger.py` to verify sorting and merging logic.
-    - [ ] Verify that the merged file `data/merged_full_audio.m4a` is correctly generated.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Audio Merging Utility' (Protocol in workflow.md)
+## Phase 1: Audio Merging Utility [checkpoint: 01507db]
+- [x] Task: Implement Audio Merging Script [7a3f854]
+    - [x] Create `scripts/merge_audio.py` to sort and merge segments using FFmpeg.
+    - [x] Write unit tests in `tests/test_merger.py` to verify sorting and merging logic.
+    - [x] Verify that the merged file `data/merged_full_audio.m4a` is correctly generated.
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Audio Merging Utility' (Protocol in workflow.md)
 
 ## Phase 2: Execution - Gemini 3 Flash (Local)
 - [ ] Task: Run STT Workflow with Gemini 3 Flash
