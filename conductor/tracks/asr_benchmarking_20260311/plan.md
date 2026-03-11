@@ -5,11 +5,11 @@
 - [x] Task: Implement `app/utils.py` text normalization helpers. [9134bd3]
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
-## Phase 2: Implementation of Benchmarking Script
-- [ ] Task: Create `scripts/benchmark.py` with HF streaming integration.
-- [ ] Task: Implement the core loop for sending audio to `GeminiClient` and computing WER.
-- [ ] Task: Add result persistence (saving to `output/benchmarks/`).
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
+## Phase 2: Implementation of Benchmarking Script [checkpoint: b930ae9]
+- [x] Task: Create `scripts/benchmark.py` with HF streaming integration. [e4bfc8a]
+- [x] Task: Implement the core loop for sending audio to `GeminiClient` and computing WER. [e4bfc8a]
+- [x] Task: Add result persistence (saving to `output/benchmarks/`). [e4bfc8a]
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
 
 ## Phase 3: Validation & Baseline Run
 - [ ] Task: Run a benchmark on the first 100 samples of LibriSpeech.
