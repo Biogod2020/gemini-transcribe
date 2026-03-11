@@ -20,12 +20,10 @@ class GeminiClient:
         self.upload_url = config.UPLOAD_URL
         self.use_inline_data = use_inline_data
         self.thinking_level = thinking_level
+        # Auto-detect local proxy
+        self.is_local = "localhost" in self.base_url or "127.0.0.1" in self.base_url
 
     async def upload_file(self, content: bytes, mime_type: str, display_name: str) -> Tuple[str, str]:
-        """
-        Upload a file using the resumable upload protocol.
-        Returns: (file_uri, file_name)
-        """
         if self.use_inline_data:
             return "inline_mode", "inline_mode"
             
@@ -45,8 +43,6 @@ class GeminiClient:
                 headers=headers,
                 json=metadata
             )
-            if resp.status_code >= 400:
-                print(f"Error starting upload: {resp.status_code} - {resp.text}")
             resp.raise_for_status()
             upload_url = resp.headers["X-Goog-Upload-URL"]
             
@@ -65,9 +61,6 @@ class GeminiClient:
             return file_info["uri"], file_info["name"]
 
     async def poll_file_state(self, file_name: str, interval: float = 2.0, max_retries: int = 30) -> bool:
-        """
-        Poll the file state until it's ACTIVE.
-        """
         if self.use_inline_data:
             return True
             
@@ -106,15 +99,17 @@ class GeminiClient:
                 fileUri=file_uri
             )))
         
+        # Consistent snake_case for thinking_config as required by Gemini 3.x v1beta (official & local)
         thinking_config = ThinkingConfig(
-            includeProcess=True,
-            thinkingLevel=self.thinking_level
+            include_thoughts=True,
+            thinking_level=self.thinking_level,
+            thinking_budget=None # Omit budget when level is provided
         )
         
         gen_config = GenerationConfig(
             responseMimeType="application/json",
             responseSchema=response_schema,
-            thinkingConfig=thinking_config
+            thinking_config=thinking_config
         )
 
         request = GenerateContentRequest(
@@ -122,7 +117,10 @@ class GeminiClient:
             generationConfig=gen_config
         )
         
-        payload = request.model_dump(by_alias=True, exclude_none=True)
+        # Official Gemini 3.x v1beta seems to expect snake_case for these new fields
+        # while existing fields like responseMimeType work in both.
+        # request.model_dump(by_alias=False) gives us snake_case.
+        payload = request.model_dump(by_alias=False, exclude_none=True)
         
         async with httpx.AsyncClient(timeout=300.0) as client:
             for attempt in range(3):
@@ -138,10 +136,7 @@ class GeminiClient:
             result = resp.json()
             extracted = extract_content_and_thoughts(result)
             
-            # Print thoughts for real-time logging
             if extracted["thought"]:
                 print(f"\n--- Model Thought Process ---\n{extracted['thought']}\n-----------------------------\n")
                 
             return extracted
-
-

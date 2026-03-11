@@ -50,13 +50,27 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
     # 3. Build Prompt
     prompt = build_transcription_prompt(state["global_memory"], state["processed_chunks"])
     
-    # 4. Generate Transcription
+    # 4. Define Response Schema (Force ARRAY of OBJECTS)
+    response_schema = {
+        "type": "ARRAY",
+        "items": {
+            "type": "OBJECT",
+            "properties": {
+                "speaker_id": {"type": "STRING"},
+                "text": {"type": "STRING"}
+            },
+            "required": ["speaker_id", "text"]
+        }
+    }
+
+    # 5. Generate Transcription
     try:
         response = await client.generate_content(
             prompt=prompt,
             mime_type="audio/mpeg",
             file_uri=file_uri,
-            audio_content=content
+            audio_content=content,
+            response_schema=response_schema
         )
         
         raw_response = response["data"]

@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from typing import List, Dict
+from app.config import config
 
 class VADProcessor:
     def __init__(self, min_silence_duration_ms: int = 700, threshold: float = 0.5):
@@ -39,7 +40,7 @@ class VADProcessor:
         )
         return speech_timestamps
 
-    def get_chunks(self, audio_data: np.ndarray, sampling_rate: int = 16000, target_chunk_duration_sec: int = 420, max_chunk_duration_sec: int = 600) -> List[np.ndarray]:
+    def get_chunks(self, audio_data: np.ndarray, sampling_rate: int = 16000, target_chunk_duration_sec: int = config.VAD_TARGET_CHUNK_SEC, max_chunk_duration_sec: int = config.VAD_MAX_CHUNK_SEC) -> List[np.ndarray]:
         """
         Split a long audio buffer into chunks at silence points, enforcing duration bounds.
         

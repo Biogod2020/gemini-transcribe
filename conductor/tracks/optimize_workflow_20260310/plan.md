@@ -26,3 +26,12 @@
     - [x] **Write Tests**: Add any necessary integration assertions to ensure the LangGraph state transitions handle the new prompt structure and chunking correctly.
     - [x] **Implement Feature**: Run `test_real_audio.py` against a test audio file to confirm the full pipeline (larger chunks -> enriched memory -> full context + CoT generation -> robust parsing) works without errors.
 - [x] Task: Conductor - User Manual Verification 'Phase 4: End-to-End Validation' (Protocol in workflow.md) [e0454da]
+
+## Phase 5: Data Assembly and Export
+- [ ] Task: Implement Transcript Exporter
+    - [ ] **Write Tests**: Verify JSON and Markdown formatting.
+    - [ ] **Implement Feature**: Create `app/transcript_exporter.py` to save to `output/` directory.
+- [ ] Task: Integrate Export into Workflow
+    - [ ] **Write Tests**: Verify the export files are generated correctly after a run.
+    - [ ] **Implement Feature**: Update the test script to call the exporter and ensure output folder exists.
+- [ ] Task: Conductor - User Manual Verification 'Phase 5: Data Assembly and Export' (Protocol in workflow.md)
