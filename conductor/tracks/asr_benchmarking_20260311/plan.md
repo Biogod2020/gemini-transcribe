@@ -1,7 +1,7 @@
 # Implementation Plan: Standardized ASR Benchmarking Suite
 
 ## Phase 1: Dependency & Environment Setup
-- [ ] Task: Update `pyproject.toml` with benchmarking dependencies (`datasets`, `evaluate`, `jiwer`, `soundfile`).
+- [x] Task: Update `pyproject.toml` with benchmarking dependencies (`datasets`, `evaluate`, `jiwer`, `soundfile`). [dfcdd04]
 - [ ] Task: Implement `app/utils.py` text normalization helpers.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
