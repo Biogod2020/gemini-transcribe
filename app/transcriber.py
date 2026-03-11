@@ -54,34 +54,25 @@ def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: 
 
     return prompt
 
-def parse_transcription_response(response: str) -> List[Dict[str, str]]:
+from app.utils import parse_json_response
+
+def parse_transcription_response(response: Any) -> List[Dict[str, str]]:
     """
-    Robustly parses the JSON array from the model's response.
-    This is now a secondary fallback since GeminiClient handles the primary parsing.
+    Returns the parsed JSON array.
+    Handles both raw strings (for tests/older calls) and pre-parsed results 
+    from GeminiClient.
     """
-    # 1. Try direct JSON parse
-    try:
-        data = json.loads(response)
-        if isinstance(data, list):
-            return data
-    except json.JSONDecodeError:
-        pass
-
-    # 2. Try to find JSON block via regex
-    json_match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", response, re.DOTALL)
-    if json_match:
-        try:
-            return json.loads(json_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    # 3. Last ditch attempt: find the outer brackets
-    start = response.find('[')
-    end = response.rfind(']')
-    if start != -1 and end != -1:
-        try:
-            return json.loads(response[start:end+1])
-        except json.JSONDecodeError:
-            pass
-
+    data = None
+    if isinstance(response, str):
+        data = parse_json_response(response)
+    elif isinstance(response, list):
+        data = response
+    elif isinstance(response, dict) and "data" in response:
+        data = response["data"]
+    
+    if isinstance(data, list):
+        return data
+            
     return []
+
+

@@ -1,0 +1,81 @@
+import json
+import re
+from typing import Any, Optional, Dict
+
+def parse_json_response(text: str) -> Any:
+    """
+    Robustly parses JSON from a model response string.
+    Handles cases where the model might wrap JSON in markdown blocks or 
+    include leading/trailing explanatory text.
+    """
+    text = text.strip()
+    if not text:
+        return None
+
+    # 1. Try direct JSON parse
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 2. Try to find JSON block via regex (Markdown blocks)
+    # Search for ```json ... ``` or ``` ... ```
+    json_match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+    if json_match:
+        try:
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # 3. Last ditch attempt: find the outermost brackets
+    # This handles text like "Sure, here is your JSON: { ... }"
+    start_bracket = text.find('[')
+    start_brace = text.find('{')
+    
+    # Determine which bracket comes first
+    if start_bracket != -1 and (start_brace == -1 or start_bracket < start_brace):
+        start = start_bracket
+        end = text.rfind(']')
+    elif start_brace != -1:
+        start = start_brace
+        end = text.rfind('}')
+    else:
+        start = -1
+        end = -1
+
+    if start != -1 and end != -1 and end > start:
+        try:
+            return json.loads(text[start:end+1])
+        except json.JSONDecodeError:
+            pass
+
+    # If all failed, return raw text as fallback (or raise error if strict)
+    return text
+
+def extract_content_and_thoughts(response_payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Follows official pattern to separate thought parts and text parts from a Gemini response.
+    Returns: {"data": parsed_json, "thought": full_thoughts_string}
+    """
+    candidates = response_payload.get("candidates", [])
+    if not candidates:
+        return {"data": None, "thought": ""}
+        
+    parts = candidates[0].get("content", {}).get("parts", [])
+    thoughts = []
+    text_parts = []
+    
+    for part in parts:
+        part_text = part.get("text", "")
+        # Official API uses the 'thought' boolean flag
+        if part.get("thought"):
+            thoughts.append(part_text)
+        else:
+            text_parts.append(part_text)
+    
+    full_thoughts = "\n".join(thoughts).strip()
+    combined_text = "".join(text_parts).strip()
+    
+    parsed_data = parse_json_response(combined_text)
+    
+    return {"data": parsed_data, "thought": full_thoughts}

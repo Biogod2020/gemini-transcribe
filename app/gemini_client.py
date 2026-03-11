@@ -10,6 +10,8 @@ from app.models import (
     Content, Part, InlineData, FileData
 )
 
+from app.utils import extract_content_and_thoughts
+
 class GeminiClient:
     def __init__(self, api_key: str = config.API_KEY, model: str = config.DEFAULT_MODEL, use_inline_data: bool = config.USE_INLINE_DATA, thinking_level: str = config.THINKING_LEVEL):
         self.api_key = api_key
@@ -134,57 +136,12 @@ class GeminiClient:
                 break
             
             result = resp.json()
-            
-            # Extract thoughts and text (Refined logic based on official API behavior)
-            candidates = result.get("candidates", [])
-            if not candidates:
-                return {"data": [], "thought": "No candidates returned"}
-                
-            parts_resp = candidates[0].get("content", {}).get("parts", [])
-            thoughts = []
-            text_parts = []
-            
-            for part in parts_resp:
-                part_text = part.get("text", "")
-                # Official API uses the 'thought' boolean flag
-                if part.get("thought"):
-                    thoughts.append(part_text)
-                else:
-                    text_parts.append(part_text)
-            
-            full_thoughts = "\n".join(thoughts).strip()
-            text_response = "".join(text_parts).strip()
+            extracted = extract_content_and_thoughts(result)
             
             # Print thoughts for real-time logging
-            if full_thoughts:
-                print(f"\n--- Model Thought Process ---\n{full_thoughts}\n-----------------------------\n")
-            
-            # Parse the final JSON response
-            parsed_data = None
-            try:
-                parsed_data = json.loads(text_response)
-            except json.JSONDecodeError:
-                # Robust extraction if the model still surrounds JSON with text/markdown
-                import re
-                json_match = re.search(r"```(?:json)?\s*(.*?)\s*```", text_response, re.DOTALL)
-                if json_match:
-                    try:
-                        parsed_data = json.loads(json_match.group(1))
-                    except json.JSONDecodeError:
-                        pass
+            if extracted["thought"]:
+                print(f"\n--- Model Thought Process ---\n{extracted['thought']}\n-----------------------------\n")
                 
-                if parsed_data is None:
-                    # Last resort: find outer brackets
-                    start = text_response.find('[') if text_response.find('[') != -1 else text_response.find('{')
-                    end = text_response.rfind(']') if text_response.rfind(']') != -1 else text_response.rfind('}')
-                    if start != -1 and end != -1:
-                        try:
-                            parsed_data = json.loads(text_response[start:end+1])
-                        except json.JSONDecodeError:
-                            pass
-            
-            if parsed_data is None:
-                parsed_data = text_response # Fallback to raw text if parsing impossible
-                
-            return {"data": parsed_data, "thought": full_thoughts}
+            return extracted
+
 
