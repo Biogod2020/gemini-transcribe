@@ -1,0 +1,17 @@
+# Implementation Plan: Standardized ASR Benchmarking Suite
+
+## Phase 1: Dependency & Environment Setup
+- [ ] Task: Update `pyproject.toml` with benchmarking dependencies (`datasets`, `evaluate`, `jiwer`, `soundfile`).
+- [ ] Task: Implement `app/utils.py` text normalization helpers.
+- [ ] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
+
+## Phase 2: Implementation of Benchmarking Script
+- [ ] Task: Create `scripts/benchmark.py` with HF streaming integration.
+- [ ] Task: Implement the core loop for sending audio to `GeminiClient` and computing WER.
+- [ ] Task: Add result persistence (saving to `output/benchmarks/`).
+- [ ] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
+
+## Phase 3: Validation & Baseline Run
+- [ ] Task: Run a benchmark on the first 100 samples of LibriSpeech.
+- [ ] Task: Generate the first official baseline report in `docs/benchmarks/`.
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: Validation' (Protocol in workflow.md)
