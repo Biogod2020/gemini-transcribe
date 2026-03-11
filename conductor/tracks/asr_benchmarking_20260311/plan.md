@@ -1,9 +1,9 @@
 # Implementation Plan: Standardized ASR Benchmarking Suite
 
-## Phase 1: Dependency & Environment Setup
+## Phase 1: Dependency & Environment Setup [checkpoint: 48b3669]
 - [x] Task: Update `pyproject.toml` with benchmarking dependencies (`datasets`, `evaluate`, `jiwer`, `soundfile`). [dfcdd04]
 - [x] Task: Implement `app/utils.py` text normalization helpers. [9134bd3]
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
 ## Phase 2: Implementation of Benchmarking Script
 - [ ] Task: Create `scripts/benchmark.py` with HF streaming integration.
