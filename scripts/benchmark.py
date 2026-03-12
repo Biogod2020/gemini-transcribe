@@ -68,14 +68,33 @@ class ASRBenchmark:
         
         return [client_flash, client_lite]
 
-    async def run(self, take_samples: int = 3):
+    async def run(self, take_samples: int = 3, target_sample_id: str = None):
         logger.info(f"Starting benchmark on {self.dataset_name}")
         clients = self._setup_clients()
         dataset = load_dataset(self.dataset_name, self.config_name, split=self.split, streaming=True)
         
-        # Randomly sample by shuffling with a buffer
-        dataset = dataset.shuffle(seed=random.randint(0, 1000), buffer_size=100).take(take_samples)
-        self.metadata["samples_requested"] = take_samples
+        if target_sample_id:
+            logger.info(f"Filtering for specific sample_id: {target_sample_id}")
+            # Find the specific sample in the stream
+            dataset_iter = iter(dataset)
+            found = False
+            for idx, item in enumerate(dataset_iter):
+                if idx == 0:
+                    logger.info(f"Available keys in dataset item: {item.keys()}")
+                
+                # Check various potential ID fields
+                current_id = str(item.get("segment_id") or item.get("id") or idx)
+                if current_id == target_sample_id:
+                    dataset = [item]
+                    found = True
+                    break
+            if not found:
+                raise ValueError(f"Sample ID {target_sample_id} not found in dataset.")
+        else:
+            # Randomly sample by shuffling with a buffer
+            dataset = dataset.shuffle(seed=random.randint(0, 1000), buffer_size=100).take(take_samples)
+        
+        self.metadata["samples_requested"] = take_samples if not target_sample_id else 1
 
         for idx, item in enumerate(dataset):
             raw_audio_array = item["audio"]["array"]
@@ -91,23 +110,29 @@ class ASRBenchmark:
                 raw_path = os.path.join(temp_run_dir, "raw_stream.wav")
                 sf.write(raw_path, raw_audio_array, raw_sample_rate)
                 
-                # 1. Preprocess (LUFS, Resample, Mono)
-                logger.info(f"  Preprocessing audio (LUFS normalization, 16kHz Mono)...")
-                audio_segment = preprocess_audio(raw_path)
+                # 1. Preprocess Global (High compression Opus for 100MB safety)
+                logger.info(f"  Preprocessing global audio (High compression Opus)...")
+                global_path = preprocess_audio(raw_path, mode="global")
+                with open(global_path, "rb") as f:
+                    global_audio_bytes = f.read()
+                
+                # 2. Preprocess Chunk (High clarity WAV)
+                logger.info(f"  Preprocessing chunk audio (High clarity WAV)...")
+                chunk_path = preprocess_audio(raw_path, mode="chunk")
+                audio_segment_chunk = AudioSegment.from_file(chunk_path)
                 
                 # Update array and sample rate from normalized segment for VAD
-                audio_array = np.array(audio_segment.get_array_of_samples()).astype(np.float32)
-                max_val = float(2**(8 * audio_segment.sample_width - 1))
-                audio_array = audio_array / max_val
-                sample_rate = audio_segment.frame_rate
+                audio_array_np = np.array(audio_segment_chunk.get_array_of_samples()).astype(np.float32)
+                max_val = float(2**(8 * audio_segment_chunk.sample_width - 1))
+                audio_array_np = audio_array_np / max_val
+                sample_rate = audio_segment_chunk.frame_rate
 
-                # 2. Run VAD to get chunks
+                # 3. Run VAD to get chunks from the high-clarity segment
                 logger.info(f"  Running VAD and adding silence padding to chunks...")
-                raw_chunks = self.vad.get_chunks(audio_array, sample_rate)
+                raw_chunks = self.vad.get_chunks(audio_array_np, sample_rate)
                 chunk_paths = []
                 for i, chunk_arr in enumerate(raw_chunks):
                     # Convert chunk back to AudioSegment to add padding
-                    # pydub expects raw bytes
                     chunk_bytes = (chunk_arr * 32767).astype(np.int16).tobytes()
                     chunk_segment = AudioSegment(
                         chunk_bytes, 
@@ -122,11 +147,6 @@ class ASRBenchmark:
                     p = os.path.join(temp_run_dir, f"chunk_{i}.mp3")
                     padded_chunk.export(p, format="mp3")
                     chunk_paths.append(p)
-                
-                # 3. Prepare full audio bytes for Global Memory (from normalized segment)
-                buffer = io.BytesIO()
-                audio_segment.export(buffer, format="wav")
-                audio_bytes = buffer.getvalue()
 
                 for client in clients:
                     model_id = client.model.replace("-", "_").replace(".", "_")
@@ -134,7 +154,8 @@ class ASRBenchmark:
                     
                     try:
                         global_gen = GlobalMemoryGenerator(client)
-                        global_memory = await global_gen.generate(audio_bytes, display_name=sample_id)
+                        # Use compressed global audio for memory generation
+                        global_memory = await global_gen.generate(global_audio_bytes, display_name=sample_id)
                         
                         initial_state = {
                             "project_id": f"bench_{sample_id}",
@@ -208,7 +229,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--samples", type=int, default=3)
+    parser.add_argument("--sample-id", type=str, default=None, help="Target a specific sample ID.")
     args = parser.parse_args()
     
     benchmark = ASRBenchmark()
-    asyncio.run(benchmark.run(take_samples=args.samples))
+    asyncio.run(benchmark.run(take_samples=args.samples, target_sample_id=args.sample_id))

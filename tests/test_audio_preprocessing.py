@@ -49,7 +49,7 @@ def test_normalize_audio_lufs():
     
     with patch("pyloudnorm.Meter") as mock_meter_class:
         mock_meter = mock_meter_class.return_value
-        mock_meter.measure.return_value = -25.0
+        mock_meter.integrated_loudness.return_value = -25.0
         
         with patch("app.utils.AudioSegment") as mock_as_class:
             from app.utils import normalize_audio_lufs
@@ -95,6 +95,30 @@ def test_add_silence_padding():
     result = add_silence_padding(audio, padding_ms=100)
     
     assert len(result) == 300 # 100 + 100 + 100
+
+def test_preprocess_audio_global_mode():
+    with patch("subprocess.run") as mock_run:
+        from app.utils import preprocess_audio
+        result = preprocess_audio("test.wav", mode="global")
+        
+        # Check command has libopus and 32k
+        args, kwargs = mock_run.call_args
+        command = args[0]
+        assert "libopus" in command
+        assert "32k" in command
+        assert result.endswith(".opus")
+
+def test_preprocess_audio_chunk_mode():
+    with patch("subprocess.run") as mock_run:
+        from app.utils import preprocess_audio
+        result = preprocess_audio("test.wav", mode="chunk")
+        
+        # Check command has pcm_s16le for high clarity
+        args, kwargs = mock_run.call_args
+        command = args[0]
+        assert "pcm_s16le" in command
+        assert result.endswith(".wav")
+
 
 
 

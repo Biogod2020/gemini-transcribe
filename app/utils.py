@@ -68,15 +68,38 @@ def add_silence_padding(audio: AudioSegment, padding_ms: int = 100) -> AudioSegm
     silence = AudioSegment.silent(duration=padding_ms, frame_rate=audio.frame_rate)
     return silence + audio + silence
 
-def preprocess_audio(file_path: str, target_lufs: float = -16.0) -> AudioSegment:
+def preprocess_audio(file_path: str, target_lufs: float = -16.0, mode: str = "chunk") -> str:
     """
-    Full preprocessing pipeline: Load -> DC Offset -> Normalize -> Standardize.
+    Full preprocessing pipeline using FFmpeg: Normalize -> Resample -> Transcode.
+    
+    Modes:
+    - "global": High compression (Opus 32kbps) for 100MB limit safety.
+    - "chunk": High clarity (WAV PCM) for accuracy.
+    
+    Returns the path to the preprocessed file.
     """
-    audio = load_audio(file_path)
-    audio = remove_dc_offset(audio)
-    audio = normalize_audio_lufs(audio, target_lufs=target_lufs)
-    audio = standardize_audio(audio)
-    return audio
+    if mode == "global":
+        output_path = file_path.rsplit('.', 1)[0] + "_global.opus"
+        # 16kHz, Mono, 32k bitrate Opus
+        codec_args = ["-c:a", "libopus", "-b:a", "32k"]
+    else:
+        output_path = file_path.rsplit('.', 1)[0] + "_chunk.wav"
+        # 16kHz, Mono, PCM 16-bit WAV
+        codec_args = ["-c:a", "pcm_s16le"]
+
+    command = [
+        "ffmpeg", "-y", "-i", file_path,
+        "-af", f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11",
+        "-ar", "16000", "-ac", "1"
+    ] + codec_args + [output_path]
+    
+    import subprocess
+    try:
+        subprocess.run(command, check=True, capture_output=True)
+        return output_path
+    except subprocess.CalledProcessError as e:
+        print(f"FFmpeg preprocessing failed: {e.stderr.decode()}")
+        raise e
 
 def parse_json_response(text: str) -> Any:
     """
