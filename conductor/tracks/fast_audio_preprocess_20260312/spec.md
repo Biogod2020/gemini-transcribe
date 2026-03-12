@@ -1,27 +1,29 @@
-# Specification: Fast Audio Preprocessing for Long Samples (2h+)
+# Specification: Fast Audio Preprocessing & Map-Reduce Summary (2h+)
 
 ## Overview
-This track focuses on optimizing the initial preprocessing phase for long audio files (2 hours or more) to ensure they can be efficiently uploaded and processed by Gemini for global context generation. The primary goal is to minimize resource usage and time, even at the cost of some audio fidelity, as long as speech features remain recognizable for speaker profiling and thematic analysis.
+This track focuses on maximizing the processing speed for long audio files (2h+) by shifting from a single compressed upload to a parallelized Map-Reduce summarization architecture. This ensures high-fidelity summaries while staying within the 100MB Base64 API limit through intelligent, overlapping chunking.
 
 ## Functional Requirements
-- **Concurrent Download and Preprocess**: Implement a utility that can begin audio preprocessing (resampling, normalization, compression) while the source file is still being downloaded.
-- **Audio Optimization for Global Pass**:
-    - **Target Format**: Opus (Ogg) at 32-48kbps.
-    - **Resampling**: Downsample to 16kHz mono.
-    - **Normalization**: LUFS normalization to -16.0 LUFS.
-    - **Feature Preservation**: Ensure preprocessing parameters do not compromise speech feature recognition (speaker identity and core vocabulary).
-- **High-Quality Source Preservation**: Simultaneously save a high-precision version of the source stream (e.g., raw stream or high-bitrate 128kbps+ Opus) locally to serve as the reference for future VAD-based chunking during the STT phase.
-- **Resource Efficiency**: Use non-blocking I/O or subprocesses to handle the 2-hour sample without exhausting local memory.
+- **Fast Audio Standardization**: Quickly convert long audio (2h+) to a standard format (16kHz Mono WAV) using linear transcoding (fastest pass).
+- **Base64-Aware Chunking Strategy**: 
+    - Automatically calculate the projected Base64 size of the standardized file.
+    - If `projected_base64_size > 100MB` (approx. >75MB raw WAV file), trigger **Overlapping Chunking**.
+- **Overlapping Chunking**: Split the audio into large segments (e.g., 20 minutes) with a 2-minute overlap to ensure no context is lost at boundaries.
+- **Parallel Map-Reduce Summary**:
+    - **Map Phase**: Concurrently upload chunks and generate individual summaries for each segment using Gemini.
+    - **Reduce Phase**: Synthesize all segment summaries into a single cohesive Global Summary following the standard 6-dimension schema.
+- **Resource Efficiency**: Maximize CPU utilization through parallel API processing and avoid slow lossy re-encoding (like Opus/MP3) for the summary pass.
 
 ## Non-Functional Requirements
-- **Execution Speed**: The preprocessing should ideally complete shortly after the download finishes.
-- **Robustness**: Handle partial downloads or network interruptions gracefully.
+- **Execution Speed**: Standardization and chunking should be near-linear with disk I/O (e.g., <60s for 2h audio).
+- **Scalability**: Capable of handling 4h+ audio by increasing the number of parallel chunks.
 
 ## Acceptance Criteria
-- [ ] Successfully pre-processes a 2-hour Earnings-22 sample from a URL in under 5 minutes after download completion.
-- [ ] Output file size is within the 100MB Gemini upload limit for 2-hour samples.
-- [ ] The generated global summary from the preprocessed file correctly identifies all speakers and major themes.
+- [ ] Successfully standardizes a 2-hour audio file in under 60 seconds.
+- [ ] Correctly triggers chunking based on the 100MB Base64 threshold.
+- [ ] Concurrently generates segment summaries.
+- [ ] Produces a final aggregated Global Summary that synthesizes information accurately across all segments.
 
 ## Out of Scope
-- Implementation of the full transcription loop (this track ends at the `fileUri` generation for the global pass).
-- Handling non-audio file formats.
+- Full transcription loop (handled by subsequent STT tracks).
+- Real-time streaming output (this focus is on batch preprocessing).

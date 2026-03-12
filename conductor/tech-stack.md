@@ -7,8 +7,10 @@
 - **Data Modeling**: **Pydantic** for request/response validation and serialization.
 
 ## AI & Audio Processing
-- **AI Model**: `gemini-3.1-flash-lite-preview` accessed via direct HTTP RESTful API (using `httpx` or `requests`) to minimize dependencies.
+- **AI Model**: `gemini-3-flash-preview` and `gemini-3.1-flash-lite-preview` accessed via direct HTTP RESTful API.
 - **VAD Segmentation**: **Silero VAD** (running on local CPU via `onnxruntime`) for intelligent, high-speed audio splitting.
+- **Audio Preprocessing**: **FFmpeg** for high-speed linear standardization (16kHz Mono WAV) and overlapping chunking.
+- **Summarization Architecture**: **Map-Reduce Parallel Pipeline** for long audio (2h+), ensuring context continuity and bypassing the 100MB Base64 API limit.
 - **Audio Conversion**: **pydub** or **librosa** (backed by FFmpeg) for audio format handling.
 
 ## Frontend (Web Application)

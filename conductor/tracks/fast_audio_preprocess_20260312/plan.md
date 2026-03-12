@@ -1,21 +1,21 @@
-# Implementation Plan: Fast Audio Preprocessing for Long Samples (2h+)
+# Implementation Plan: Fast Audio Preprocessing & Map-Reduce Summary (2h+)
 
-## Phase 1: Dependency & Utility Setup [checkpoint: 47a4866]
-- [x] Task: Update `pyproject.toml` with `httpx` and `ffmpeg-python` (or similar) for streaming. [d3d8d4c]
-- [x] Task: Implement `app/downloader.py` to handle chunked streaming from a URL. [122a7d0]
-- [x] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
+## Phase 1: Fast Standardization & Threshold Detection [checkpoint: 705718]
+- [x] Task: Update `pyproject.toml` with `httpx` and `ffmpeg-python`. [d3d8d4c]
+- [x] Task: Implement `app/downloader.py` for chunked download. [122a7d0]
+- [x] Task: Create `scripts/fast_standardize.py` to convert audio to 16kHz Mono WAV (PCM). [705718]
+- [x] Task: Implement logic to calculate projected Base64 size (`file_size * 1.33`) and determine if chunking is needed (>100MB). [705718]
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Standardization' (Protocol in workflow.md)
 
-## Phase 2: Concurrent Download & Preprocessing Utility [checkpoint: 26278a2]
-- [x] Task: Create `scripts/fast_preprocess.py` to pipe `httpx` stream to **multiple** outputs: [4b19b4c]
-    - **Output 1**: Highly compressed Opus (32kbps) for Global Pass.
-    - **Output 2**: High-Quality source (e.g., 128kbps Opus or raw stream) as local reference for chunking.
-- [x] Task: Implement `-16.0 LUFS` normalization and `16kHz 16-bit Mono` resampling in the ffmpeg pipeline for the Global Pass output. [4b19b4c]
-- [x] Task: Configure Opus encoding at `32kbps` for the Global Pass to ensure the 2-hour file stays under 100MB. [4b19b4c]
-- [x] Task: Add basic error handling for network interruptions and FFmpeg failures. [9e6efe0]
-- [x] Task: Conductor - User Manual Verification 'Phase 2: Core Utility' (Protocol in workflow.md)
+## Phase 2: Overlapping Chunking Utility [checkpoint: 707326]
+- [x] Task: Implement `app/utils.py` function `get_overlapping_chunks` using FFmpeg `segment` or `trim`. [707326]
+- [x] Task: Configure default segments (e.g., 20m) and overlap (e.g., 2m). [707326]
+- [x] Task: Add unit tests to verify overlap integrity at segment boundaries. [707326]
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Chunking' (Protocol in workflow.md)
 
-## Phase 3: Gemini Integration & Validation
-- [ ] Task: Update `app/gemini_client.py` to support uploading the preprocessed file for the global pass.
-- [ ] Task: Implement a validation script to run the full "Download -> Fast Preprocess -> Gemini Upload -> Global Summary" flow.
-- [ ] Task: Benchmark the end-to-end time on a 2-hour Earnings-22 sample.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Validation' (Protocol in workflow.md)
+## Phase 3: Parallel Map-Reduce Integration [checkpoint: 1708704]
+- [x] Task: Update `app/global_memory_generator.py` to support `Map` phase (Parallel summary of all chunks). [1708704]
+- [x] Task: Implement `Reduce` phase prompt to synthesize multiple segment summaries into one 6-dimension Global Summary. [1708704]
+- [x] Task: Implement concurrency control (e.g., `asyncio.gather`) for parallel Gemini API calls. [1708704]
+- [x] Task: Final full-flow validation on the 2-hour Earnings-22 sample. [1708704]
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Map-Reduce' (Protocol in workflow.md)

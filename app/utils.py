@@ -1,6 +1,8 @@
 import json
 import re
-from typing import Any, Optional, Dict
+import asyncio
+import os
+from typing import Any, Optional, Dict, List, Tuple
 from pydub import AudioSegment
 import numpy as np
 import pyloudnorm as pyln
@@ -100,6 +102,61 @@ def preprocess_audio(file_path: str, target_lufs: float = -16.0, mode: str = "ch
     except subprocess.CalledProcessError as e:
         print(f"FFmpeg preprocessing failed: {e.stderr.decode()}")
         raise e
+
+async def get_audio_duration(file_path: str) -> float:
+    """
+    Uses ffprobe to get audio duration in seconds.
+    """
+    cmd = [
+        'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1', file_path
+    ]
+    process = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    stdout, _ = await process.communicate()
+    return float(stdout.decode().strip())
+
+async def get_overlapping_chunks(file_path: str, chunk_duration: float = 1200, overlap: float = 120) -> List[str]:
+    """
+    Splits audio into overlapping chunks.
+    Default: 20 min chunks with 2 min overlap.
+    Returns list of paths to generated chunks.
+    """
+    total_duration = await get_audio_duration(file_path)
+    base_dir = os.path.dirname(file_path)
+    base_name = os.path.basename(file_path).rsplit('.', 1)[0]
+    
+    chunks = []
+    start = 0
+    idx = 1
+    
+    while start < total_duration:
+        # Don't let the last chunk be just the overlap
+        if total_duration - start < overlap and idx > 1:
+            break
+            
+        end = min(start + chunk_duration, total_duration)
+        output_path = os.path.join(base_dir, f"{base_name}_part{idx:02d}.wav")
+        
+        # Fast trim using ffmpeg
+        cmd = [
+            'ffmpeg', '-y', '-ss', str(start), '-t', str(end - start),
+            '-i', file_path, '-c', 'copy', output_path
+        ]
+        
+        process = await asyncio.create_subprocess_exec(*cmd, stderr=asyncio.subprocess.DEVNULL)
+        await process.wait()
+        
+        chunks.append(output_path)
+        
+        if end >= total_duration:
+            break
+            
+        start += (chunk_duration - overlap)
+        idx += 1
+        
+    return chunks
 
 def parse_json_response(text: str) -> Any:
     """
