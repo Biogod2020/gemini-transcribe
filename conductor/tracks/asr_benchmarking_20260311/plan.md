@@ -16,7 +16,7 @@
 - [x] Task: Implement a universal audio loader in `app/utils.py` that supports multiple formats (MP3, M4A, etc.) using `pydub`. [b858ad1]
 - [x] Task: Implement **LUFS Normalization (EBU R128)** with a target of **-16.0 LUFS**. [b217b85]
 - [x] Task: Integrate automatic resampling to **16kHz 16-bit Mono** into the preprocessing pipeline. [9aabd61]
-- [ ] Task: Add **DC Offset removal** and **Silence Padding (100ms)**.
+- [x] Task: Add **DC Offset removal** and **Silence Padding (100ms)**. [d862684]
 - [ ] Task: Update the `STTGraph` or `ASRBenchmark` to invoke this preprocessing before VAD.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Audio Preprocessing' (Protocol in workflow.md)
 
