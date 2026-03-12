@@ -38,3 +38,23 @@ def test_load_audio_error():
         
         with pytest.raises(Exception, match="Load failed"):
             load_audio("invalid.file")
+
+def test_normalize_audio_lufs():
+    mock_audio = MagicMock()
+    # Mock pydub to numpy conversion properties
+    mock_audio.get_array_of_samples.return_value = [0] * 1000
+    mock_audio.frame_rate = 16000
+    mock_audio.sample_width = 2
+    mock_audio.channels = 1
+    
+    with patch("pyloudnorm.Meter") as mock_meter_class:
+        mock_meter = mock_meter_class.return_value
+        mock_meter.measure.return_value = -25.0
+        
+        with patch("app.utils.AudioSegment") as mock_as_class:
+            from app.utils import normalize_audio_lufs
+            result = normalize_audio_lufs(mock_audio, target_lufs=-16.0)
+            
+            # Should calculate gain: -16.0 - (-25.0) = +9.0 dB
+            mock_audio.apply_gain.assert_called_once_with(9.0)
+

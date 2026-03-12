@@ -2,6 +2,8 @@ import json
 import re
 from typing import Any, Optional, Dict
 from pydub import AudioSegment
+import numpy as np
+import pyloudnorm as pyln
 
 def load_audio(file_path: str) -> AudioSegment:
     """
@@ -13,6 +15,31 @@ def load_audio(file_path: str) -> AudioSegment:
     except Exception as e:
         # Re-raise or handle as needed for benchmarking robustness
         raise e
+
+def normalize_audio_lufs(audio: AudioSegment, target_lufs: float = -16.0) -> AudioSegment:
+    """
+    Normalizes the loudness of an AudioSegment to the target LUFS using EBU R128.
+    """
+    # Convert pydub AudioSegment to numpy array
+    # pydub samples are usually int16, we need float32 in range [-1, 1] for pyloudnorm
+    samples = np.array(audio.get_array_of_samples()).astype(np.float32)
+    
+    # Reshape for multi-channel if necessary (though we usually target mono)
+    if audio.channels > 1:
+        samples = samples.reshape((-1, audio.channels))
+    
+    # Normalize to [-1, 1] range based on sample width (2 bytes = 16-bit)
+    max_val = float(2**(8 * audio.sample_width - 1))
+    samples = samples / max_val
+    
+    # Measure current loudness
+    meter = pyln.Meter(audio.frame_rate)
+    loudness = meter.measure(samples)
+    
+    # Calculate gain to apply
+    gain_db = target_lufs - loudness
+    
+    return audio.apply_gain(gain_db)
 
 def parse_json_response(text: str) -> Any:
     """
