@@ -5,14 +5,14 @@
 - [x] Task: Implement `app/downloader.py` to handle chunked streaming from a URL. [122a7d0]
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
-## Phase 2: Concurrent Download & Preprocessing Utility
-- [ ] Task: Create `scripts/fast_preprocess.py` to pipe `httpx` stream to **multiple** outputs:
+## Phase 2: Concurrent Download & Preprocessing Utility [checkpoint: 26278a2]
+- [x] Task: Create `scripts/fast_preprocess.py` to pipe `httpx` stream to **multiple** outputs: [4b19b4c]
     - **Output 1**: Highly compressed Opus (32kbps) for Global Pass.
     - **Output 2**: High-Quality source (e.g., 128kbps Opus or raw stream) as local reference for chunking.
-- [ ] Task: Implement `-16.0 LUFS` normalization and `16kHz 16-bit Mono` resampling in the ffmpeg pipeline for the Global Pass output.
-- [ ] Task: Configure Opus encoding at `32kbps` for the Global Pass to ensure the 2-hour file stays under 100MB.
-- [ ] Task: Add basic error handling for network interruptions and FFmpeg failures.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Core Utility' (Protocol in workflow.md)
+- [x] Task: Implement `-16.0 LUFS` normalization and `16kHz 16-bit Mono` resampling in the ffmpeg pipeline for the Global Pass output. [4b19b4c]
+- [x] Task: Configure Opus encoding at `32kbps` for the Global Pass to ensure the 2-hour file stays under 100MB. [4b19b4c]
+- [x] Task: Add basic error handling for network interruptions and FFmpeg failures. [9e6efe0]
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Core Utility' (Protocol in workflow.md)
 
 ## Phase 3: Gemini Integration & Validation
 - [ ] Task: Update `app/gemini_client.py` to support uploading the preprocessed file for the global pass.
