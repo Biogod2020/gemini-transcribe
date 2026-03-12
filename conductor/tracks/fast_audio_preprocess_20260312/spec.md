@@ -1,29 +1,20 @@
-# Specification: Fast Audio Preprocessing & Map-Reduce Summary (2h+)
+# Specification: Fast Audio Preprocessing & Adaptive Summarization
 
 ## Overview
-This track focuses on maximizing the processing speed for long audio files (2h+) by shifting from a single compressed upload to a parallelized Map-Reduce summarization architecture. This ensures high-fidelity summaries while staying within the 100MB Base64 API limit through intelligent, overlapping chunking.
+This track focuses on maximizing the processing speed and semantic coherence for long audio files (2h+). The goal is to achieve Single-Pass (one-shot) summarization whenever possible by using ultra-fast, lightweight compression (MP3 32kbps) and adaptive pass-through logic, defaulting to Map-Reduce only for extremely long sessions.
 
 ## Functional Requirements
-- **Fast Audio Standardization**: Quickly convert long audio (2h+) to a standard format (16kHz Mono WAV) using linear transcoding (fastest pass).
-- **Base64-Aware Chunking Strategy**: 
-    - Automatically calculate the projected Base64 size of the standardized file.
-    - If `projected_base64_size > 100MB` (approx. >75MB raw WAV file), trigger **Overlapping Chunking**.
-- **Overlapping Chunking**: Split the audio into large segments (e.g., 20 minutes) with a 2-minute overlap to ensure no context is lost at boundaries.
-- **Parallel Map-Reduce Summary**:
-    - **Map Phase**: Concurrently upload chunks and generate individual summaries for each segment using Gemini.
-    - **Reduce Phase**: Synthesize all segment summaries into a single cohesive Global Summary following the standard 6-dimension schema.
-- **Resource Efficiency**: Maximize CPU utilization through parallel API processing and avoid slow lossy re-encoding (like Opus/MP3) for the summary pass.
-
-## Non-Functional Requirements
-- **Execution Speed**: Standardization and chunking should be near-linear with disk I/O (e.g., <60s for 2h audio).
-- **Scalability**: Capable of handling 4h+ audio by increasing the number of parallel chunks.
+- **Adaptive Standardization Pass**:
+    - **Smart Pass-through**: If the source is already compressed (MP3/M4A) and projected Base64 size < 95MB, use the original file without transcoding.
+    - **Fast MP3 Compression**: If transcoding is needed (e.g., source is WAV or too large), convert to 16kHz Mono MP3 at 32kbps using `libmp3lame` (much faster than Opus).
+- **Projected Base64 Calculation**: Automatically calculate the final Base64 size (`final_file_size * 1.33`) to verify it stays under the 100MB API limit.
+- **Adaptive Map-Reduce (Fallback)**:
+    - Only trigger if the Fast MP3 version still exceeds 75MB (approx. >5 hours of audio).
+    - Use 45-minute chunks with 5-minute overlap for maximum context retention.
+- **Resource Efficiency**: Prioritize Single-Pass summary to maintain better narrative coherence than Map-Reduce.
 
 ## Acceptance Criteria
-- [ ] Successfully standardizes a 2-hour audio file in under 60 seconds.
-- [ ] Correctly triggers chunking based on the 100MB Base64 threshold.
-- [ ] Concurrently generates segment summaries.
-- [ ] Produces a final aggregated Global Summary that synthesizes information accurately across all segments.
-
-## Out of Scope
-- Full transcription loop (handled by subsequent STT tracks).
-- Real-time streaming output (this focus is on batch preprocessing).
+- [ ] Successfully processes a 2-hour audio file in under 30 seconds.
+- [ ] Correctly identifies when to skip transcoding (Pass-through).
+- [ ] Produces a standardized file that is consistently < 100MB Base64 for audio up to 4 hours.
+- [ ] Successfully generates a Global Summary using the Single-Pass approach for the 2-hour sample.

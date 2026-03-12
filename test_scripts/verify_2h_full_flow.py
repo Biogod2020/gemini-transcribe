@@ -24,7 +24,7 @@ async def verify_2h_full_flow():
     generator = GlobalMemoryGenerator(client)
     
     # 2. Locate the preprocessed file
-    file_path = "data/processed/global_pass.opus"
+    file_path = "data/processed/adaptive_summary_ready.mp3"
     if not os.path.exists(file_path):
         print(f"Error: Preprocessed file not found at {file_path}")
         return
@@ -41,8 +41,8 @@ async def verify_2h_full_flow():
         # Note: The existing GlobalMemoryGenerator.generate uploads the file
         # and then calls generate_content.
         summary = await generator.generate(
-            audio_content=audio_content,
-            display_name="earnings22_2h_global_pass"
+            audio_content,
+            # display_name="earnings22_2h_global_pass" # No longer supported in current signature
         )
         
         print("\n--- Verification Result: SUCCESS ---")
