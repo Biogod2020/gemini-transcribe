@@ -12,22 +12,27 @@
 - [x] Task: Add ground-truth alignment and WER calculation logic for long-form audio. [8e5ed03]
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
 
-## Phase 3: Audio Preprocessing & Normalization Utility [checkpoint: b5edc12]
-- [x] Task: Implement a universal audio loader in `app/utils.py` that supports multiple formats (MP3, M4A, etc.) using `pydub`. [b858ad1]
+## Phase 3: Audio Preprocessing & Dual-Mode Compression Utility [checkpoint: b5edc12]
+- [x] Task: Implement a universal audio loader in `app/utils.py`. [b858ad1]
 - [x] Task: Implement **LUFS Normalization (EBU R128)** with a target of **-16.0 LUFS**. [b217b85]
 - [x] Task: Integrate automatic resampling to **16kHz 16-bit Mono** into the preprocessing pipeline. [9aabd61]
 - [x] Task: Add **DC Offset removal** and **Silence Padding (100ms)**. [d862684]
 - [x] Task: Update the `STTGraph` or `ASRBenchmark` to invoke this preprocessing before VAD. [398da91]
-- [x] Task: Conductor - User Manual Verification 'Phase 3: Audio Preprocessing' (Protocol in workflow.md)
+- [ ] Task: Refactor `preprocess_audio` to support **Dual Modes**:
+    - **Global Mode**: High compression (Opus 32kbps) for 100MB limit safety.
+    - **Chunk Mode**: High clarity (WAV or Opus 128kbps) for accuracy.
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: Audio Preprocessing' (Protocol in workflow.md)
 
-## Phase 4: Feasibility Validation (2h Audio)
+## Phase 4: Configurable Sliding Window Implementation
+- [ ] Task: Update `app/graph.py` and `STTState` to include `context_window_size`.
+- [ ] Task: Update `app/transcriber.py` to respect the configurable window size when building prompts.
+- [ ] Task: Add unit tests to verify that context never exceeds the window limit.
+- [ ] Task: Conductor - User Manual Verification 'Phase 4: Sliding Window' (Protocol in workflow.md)
+
+## Phase 5: Feasibility Validation & Baseline Run (2h Audio)
 - [x] Task: Identify a ~2-hour long audio file from the Earnings-22 `test` split. [4f80aab]
-- [ ] Task: Run the **complete standardized workflow** (Normalization -> VAD -> Graph) on this 2h file.
-- [ ] Task: Verify Global Memory generation and File API performance for the large file.
+- [ ] Task: Run the **complete standardized workflow** (Dual-Mode Preprocessing -> Sliding Window) on the 2h file.
 - [ ] Task: **CRITICAL CHECK**: If the 2h file triggers unrecoverable errors, HALT and await user instructions.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Feasibility' (Protocol in workflow.md)
-
-## Phase 5: Validation & Baseline Run
-- [ ] Task: Run the benchmark on 3 random long-form samples from Earnings-22.
+- [ ] Task: Run the full benchmark on 3 random long-form samples from Earnings-22.
 - [ ] Task: Generate the official comparative report in `docs/benchmarks/`.
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: Validation' (Protocol in workflow.md)

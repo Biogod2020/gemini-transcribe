@@ -14,17 +14,17 @@ This track implements a standardized benchmarking suite to evaluate the `gemini-
 2. **Evaluation Metrics**:
    - Calculate Word Error Rate (WER) using the `evaluate` library.
    - Compare the concatenated transcript from our sliding window workflow against the official ground truth transcript provided in the dataset.
-3. **Feasibility Validation (2h+ Audio)**:
-   - Verify that the system can handle audio files up to 2 hours in length.
-   - Specifically test the Global Memory pass (which sends the full file) and the File API upload for large binaries.
-   - Halt implementation and await instructions if a 2-hour file triggers unrecoverable API limits or timeouts.
-4. **Audio Preprocessing & Normalization**:
-   - **Universal Format Support**: Ensure the system can accept all common audio formats (MP3, WAV, M4A, FLAC, etc.) by implementing automatic transcoding.
-   - **Normalization**: Implement **LUFS Normalization (EBU R128)** with a target of **-16.0 LUFS** for consistent speech energy.
-   - **Standardization**: Convert all inputs to **16kHz 16-bit Mono** WAV before processing.
-5. **Reporting**:
-   - Generate a JSON result for each run in `output/benchmarks/`.
-   - Produce a comparative Markdown report summarizing the WER and qualitative strengths/weaknesses observed during the 1-hour processing runs.
+3. **Differentiated Audio Preprocessing**:
+   - **Global Pass**: Implement ultra-low bitrate compression (**Opus 32kbps**) for the full audio file to stay within 100MB `inlineData` limits for files up to 4-5 hours.
+   - **Transcription Pass**: Maintain high fidelity for individual segments (**WAV** or **Opus 128kbps**) to ensure maximum STT accuracy.
+4. **Configurable Sliding Context Window**:
+   - Implement a logic to inject a user-defined number of previous chunks as context into each transcription prompt.
+   - **Default**: Previous 5 chunks.
+   - **Goal**: Prevent context "explosion" while maintaining semantic continuity over long transcripts.
+5. **Feasibility Validation (2h+ Audio)**:
+   - Verify that the 2-hour audio file can be processed using the dual-compression strategy and the sliding window logic.
+6. **Reporting**:
+   - Generate comparative metrics showing the effect of different context window sizes on WER.
 
 ## Non-Functional Requirements
 - **Stability**: The benchmark must handle the full processing of 1-hour audio files without state corruption or crash.
