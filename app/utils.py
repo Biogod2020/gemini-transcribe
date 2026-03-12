@@ -1,6 +1,18 @@
 import json
 import re
 from typing import Any, Optional, Dict
+from pydub import AudioSegment
+
+def load_audio(file_path: str) -> AudioSegment:
+    """
+    Loads an audio file into a pydub AudioSegment.
+    Supports multiple formats (MP3, M4A, WAV, etc.) via pydub's from_file.
+    """
+    try:
+        return AudioSegment.from_file(file_path)
+    except Exception as e:
+        # Re-raise or handle as needed for benchmarking robustness
+        raise e
 
 def parse_json_response(text: str) -> Any:
     """
@@ -80,15 +92,19 @@ def extract_content_and_thoughts(response_payload: Dict[str, Any]) -> Dict[str, 
     
     return {"data": parsed_data, "thought": full_thoughts}
 
-def normalize_text(text: Optional[str]) -> str:
+def normalize_text(text: Any) -> str:
     """
     Normalizes text for ASR evaluation (WER).
+    - Converts input to string if it's not
     - Lowercases
     - Removes punctuation
     - Collapses multiple spaces
     """
-    if not text:
+    if text is None:
         return ""
+    
+    if not isinstance(text, str):
+        text = str(text)
     
     # Lowercase
     text = text.lower()
