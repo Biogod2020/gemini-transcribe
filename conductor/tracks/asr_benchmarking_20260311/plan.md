@@ -21,7 +21,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Audio Preprocessing' (Protocol in workflow.md)
 
 ## Phase 4: Feasibility Validation (2h Audio)
-- [ ] Task: Identify a ~2-hour long audio file from the Earnings-22 `test` split.
+- [x] Task: Identify a ~2-hour long audio file from the Earnings-22 `test` split. [4f80aab]
 - [ ] Task: Run the **complete standardized workflow** (Normalization -> VAD -> Graph) on this 2h file.
 - [ ] Task: Verify Global Memory generation and File API performance for the large file.
 - [ ] Task: **CRITICAL CHECK**: If the 2h file triggers unrecoverable errors, HALT and await user instructions.
