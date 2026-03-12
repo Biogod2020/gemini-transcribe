@@ -13,7 +13,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
 
 ## Phase 3: Audio Preprocessing & Normalization Utility
-- [ ] Task: Implement a universal audio loader in `app/utils.py` that supports multiple formats (MP3, M4A, etc.) using `pydub`.
+- [x] Task: Implement a universal audio loader in `app/utils.py` that supports multiple formats (MP3, M4A, etc.) using `pydub`. [b858ad1]
 - [ ] Task: Implement **LUFS Normalization (EBU R128)** with a target of **-16.0 LUFS**.
 - [ ] Task: Integrate automatic resampling to **16kHz 16-bit Mono** into the preprocessing pipeline.
 - [ ] Task: Add **DC Offset removal** and **Silence Padding (100ms)**.
