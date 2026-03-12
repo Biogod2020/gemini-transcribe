@@ -9,5 +9,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: 力争用最小的资源+最快的速度处理我们遇到的那个2小时+的样本 (High-Efficiency Large Audio Preprocessing)**
-*Link: [./tracks/high_efficiency_preprocessing_20260312/](./tracks/high_efficiency_preprocessing_20260312/)*
+- [ ] **Track: Fast Audio Preprocessing for Long Samples (2h+)**
+*Link: [./tracks/fast_audio_preprocess_20260312/](./tracks/fast_audio_preprocess_20260312/)*
