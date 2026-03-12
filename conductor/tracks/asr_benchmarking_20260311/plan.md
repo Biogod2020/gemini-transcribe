@@ -14,8 +14,9 @@
 
 ## Phase 3: Audio Preprocessing & Normalization Utility
 - [ ] Task: Implement a universal audio loader in `app/utils.py` that supports multiple formats (MP3, M4A, etc.) using `pydub`.
-- [ ] Task: Implement audio normalization logic (Peak/LUFS) to standardize volume levels.
-- [ ] Task: Integrate automatic resampling to 16kHz Mono into the preprocessing pipeline.
+- [ ] Task: Implement **LUFS Normalization (EBU R128)** with a target of **-16.0 LUFS** for consistent speech energy.
+- [ ] Task: Integrate automatic resampling to **16kHz 16-bit Mono** into the preprocessing pipeline.
+- [ ] Task: Add **DC Offset removal** and **Silence Padding (100ms)** to prevent word-clipping at chunk boundaries.
 - [ ] Task: Update the `STTGraph` or `ASRBenchmark` to invoke this preprocessing before VAD.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Audio Preprocessing' (Protocol in workflow.md)
 
