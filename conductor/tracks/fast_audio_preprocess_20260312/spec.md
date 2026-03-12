@@ -10,6 +10,7 @@ This track focuses on optimizing the initial preprocessing phase for long audio 
     - **Resampling**: Downsample to 16kHz mono.
     - **Normalization**: LUFS normalization to -16.0 LUFS.
     - **Feature Preservation**: Ensure preprocessing parameters do not compromise speech feature recognition (speaker identity and core vocabulary).
+- **High-Quality Source Preservation**: Simultaneously save a high-precision version of the source stream (e.g., raw stream or high-bitrate 128kbps+ Opus) locally to serve as the reference for future VAD-based chunking during the STT phase.
 - **Resource Efficiency**: Use non-blocking I/O or subprocesses to handle the 2-hour sample without exhausting local memory.
 
 ## Non-Functional Requirements

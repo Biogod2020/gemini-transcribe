@@ -6,9 +6,11 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
 ## Phase 2: Concurrent Download & Preprocessing Utility
-- [ ] Task: Create `scripts/fast_preprocess.py` to pipe `httpx` stream directly into `ffmpeg`.
-- [ ] Task: Implement `-16.0 LUFS` normalization and `16kHz 16-bit Mono` resampling in the ffmpeg pipeline.
-- [ ] Task: Configure Opus encoding at `32kbps` to ensure the 2-hour file stays under 100MB.
+- [ ] Task: Create `scripts/fast_preprocess.py` to pipe `httpx` stream to **multiple** outputs:
+    - **Output 1**: Highly compressed Opus (32kbps) for Global Pass.
+    - **Output 2**: High-Quality source (e.g., 128kbps Opus or raw stream) as local reference for chunking.
+- [ ] Task: Implement `-16.0 LUFS` normalization and `16kHz 16-bit Mono` resampling in the ffmpeg pipeline for the Global Pass output.
+- [ ] Task: Configure Opus encoding at `32kbps` for the Global Pass to ensure the 2-hour file stays under 100MB.
 - [ ] Task: Add basic error handling for network interruptions and FFmpeg failures.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Core Utility' (Protocol in workflow.md)
 
