@@ -103,6 +103,61 @@ def preprocess_audio(file_path: str, target_lufs: float = -16.0, mode: str = "ch
         print(f"FFmpeg preprocessing failed: {e.stderr.decode()}")
         raise e
 
+async def get_audio_info(file_path: str) -> Tuple[str, int]:
+    """
+    Uses ffprobe to get audio format and size.
+    """
+    cmd = [
+        'ffprobe', '-v', 'quiet', '-print_format', 'json',
+        '-show_format', '-show_streams', file_path
+    ]
+    process = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    stdout, _ = await process.communicate()
+    data = json.loads(stdout)
+    
+    format_name = data.get('format', {}).get('format_name', '').lower()
+    size_bytes = int(data.get('format', {}).get('size', 0))
+    
+    return format_name, size_bytes
+
+async def prepare_audio_for_summary(input_path: str, output_dir: str) -> Tuple[str, str]:
+    """
+    SOTA Adaptive Preprocessing:
+    - Returns (final_path, strategy)
+    - Strategies: 'single-pass' or 'map-reduce'
+    """
+    format_name, size_bytes = await get_audio_info(input_path)
+    projected_base64_mb = (size_bytes * 1.33) / (1024 * 1024)
+    
+    base_name = os.path.basename(input_path).rsplit('.', 1)[0]
+    output_path = os.path.join(output_dir, f"{base_name}_summary_ready.mp3")
+
+    # Logic: Smart Pass-through
+    is_compressed = any(ext in format_name for ext in ['mp3', 'm4a', 'aac', 'mov'])
+    
+    if is_compressed and projected_base64_mb < 95:
+        print(f">>> App Auto-Detect: Pass-through ({projected_base64_mb:.2f}MB Base64)")
+        cmd = ['ffmpeg', '-y', '-i', input_path, '-c', 'copy', output_path]
+    else:
+        print(f">>> App Auto-Detect: Fast Transcode (Size/Format optimization)")
+        cmd = [
+            'ffmpeg', '-y', '-i', input_path,
+            '-ar', '16000', '-ac', '1',
+            '-c:a', 'libmp3lame', '-b:a', '32k',
+            output_path
+        ]
+    
+    process = await asyncio.create_subprocess_exec(*cmd, stderr=asyncio.subprocess.DEVNULL)
+    await process.wait()
+    
+    final_size = os.path.getsize(output_path)
+    final_base64_mb = (final_size * 1.33) / (1024 * 1024)
+    
+    strategy = "map-reduce" if final_base64_mb > 100 else "single-pass"
+    return output_path, strategy
+
 async def get_audio_duration(file_path: str) -> float:
     """
     Uses ffprobe to get audio duration in seconds.

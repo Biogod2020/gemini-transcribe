@@ -7,11 +7,11 @@ class Config:
             "gemini-3-flash-preview", 
             "gemini-3.1-flash-lite-preview"
         ]
-        self.DEFAULT_MODEL = "gemini-3-flash-preview"
+        self.DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "3.1-flash-lite-preview")
         
-        # Using official Google Generative Language API
-        self.BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
-        self.UPLOAD_URL = "https://generativelanguage.googleapis.com/upload/v1beta/files"
+        # Using official Google Generative Language API or Local Proxy
+        self.BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta")
+        self.UPLOAD_URL = os.environ.get("GEMINI_UPLOAD_URL", "https://generativelanguage.googleapis.com/upload/v1beta/files")
         
         # API Key management
         self.API_KEY = self._load_api_key()

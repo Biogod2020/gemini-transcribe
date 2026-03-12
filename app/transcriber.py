@@ -2,7 +2,7 @@ import json
 import re
 from typing import Dict, Any, List
 
-def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: List[Dict[str, Any]]) -> str:
+def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: List[Dict[str, Any]], context_window_size: int = 2) -> str:
     """
     Builds a SOTA-level transcription prompt that is domain-agnostic and relies on internal reasoning.
     """
@@ -14,9 +14,11 @@ def build_transcription_prompt(global_memory: Dict[str, Any], processed_chunks: 
     speakers = json.dumps(global_memory.get("speakers", []), ensure_ascii=False)
     
     context_text = ""
-    if processed_chunks:
+    if processed_chunks and context_window_size > 0:
+        # Sliding Window implementation
+        recent_chunks = processed_chunks[-context_window_size:]
         context_text = "## 历史对齐上下文 (仅供参考衔接)\n"
-        for chunk in processed_chunks:
+        for chunk in recent_chunks:
             context_text += f"--- 第 {chunk['chunk_index']} 段 ---\n{chunk.get('transcript', '')}\n"
     else:
         context_text = "（这是音频的第一部分，尚无历史转录参考）"

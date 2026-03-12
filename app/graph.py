@@ -8,12 +8,13 @@ from app.transcriber import build_transcription_prompt, parse_transcription_resp
 class STTState(TypedDict):
     project_id: str
     global_memory: Dict[str, Any]
-    processed_chunks: List[Dict[str, Any]] # [{"chunk_index": 0, "transcript": "...", "raw_json": [...], "thought": "..."}]
-    chunks_to_process: List[str] # List of file paths
+    processed_chunks: List[Dict[str, Any]]
+    chunks_to_process: List[str]
     current_chunk_index: int
     api_key: str
     model_name: str
     use_inline_data: bool
+    context_window_size: int
 
 async def transcribe_chunk_node(state: STTState) -> STTState:
     """
@@ -22,25 +23,26 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
     """
     current_index = state["current_chunk_index"]
     chunks = state["chunks_to_process"]
-    
+    window_size = state.get("context_window_size", 2)
+
     if current_index >= len(chunks):
         return state
 
     file_path = chunks[current_index]
     client = GeminiClient(api_key=state["api_key"], model=state["model_name"], use_inline_data=state.get("use_inline_data", False))
-    
+
     print(f"--- Processing Chunk {current_index}/{len(chunks)}: {os.path.basename(file_path)} ---")
-    
+
     # 1. Upload chunk
     with open(file_path, "rb") as f:
         content = f.read()
-    
+
     file_uri, file_name = await client.upload_file(
-        content, 
-        mime_type="audio/mpeg", 
+        content,
+        mime_type="audio/mpeg",
         display_name=f"chunk_{current_index}"
     )
-    
+
     # 2. Wait for ACTIVE state (if not using inline data)
     is_ready = await client.poll_file_state(file_name)
     if not is_ready:
@@ -48,8 +50,11 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
         return state
 
     # 3. Build Prompt
-    prompt = build_transcription_prompt(state["global_memory"], state["processed_chunks"])
-    
+    prompt = build_transcription_prompt(
+        state["global_memory"], 
+        state["processed_chunks"],
+        context_window_size=window_size
+    )
     # 4. Define Response Schema (Force ARRAY of OBJECTS)
     response_schema = {
         "type": "ARRAY",

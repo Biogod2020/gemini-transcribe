@@ -1,7 +1,9 @@
 import asyncio
 import json
+import os
 from typing import List, Dict, Any
 from app.gemini_client import GeminiClient
+from app.utils import prepare_audio_for_summary, get_overlapping_chunks
 
 class GlobalMemoryGenerator:
     def __init__(self, client: GeminiClient):
@@ -9,7 +11,7 @@ class GlobalMemoryGenerator:
         
         # --- SOTA Prompt: Single Pass (Direct) ---
         self.single_pass_prompt = (
-            "你是一个顶级的多模态理解专家。你面前的是一段超长音频的完整流。你的目标是进行深度的全局语义解构。\n"
+            "你是一个顶级的多模态理解专家。你面前的是一段长音频的完整流。你的目标是进行深度的全局语义解构。\n"
             "在输出最终 JSON 前，请先进行 Chain-of-Thought 分析：理清叙事脉络、参与者立场演变以及隐含的核心议题。\n"
             "请输出严格的 JSON 数据，包含以下六个字段：\n"
             "1. 'theme': 核心议题的高度概括与底层逻辑（50字内）。\n"
@@ -22,7 +24,7 @@ class GlobalMemoryGenerator:
 
         # --- SOTA Prompt: Map Phase ---
         self.map_prompt_template = (
-            "你是一个精密的审计分析师。你正在听整段超长音频的第 {idx} 个分块（带重叠）。\n"
+            "你是一个精密的审计分析师。你正在听一段长音频的分块（带重叠）。\n"
             "你的任务是为后续的全局聚合提供高保真的碎片化信息。请聚焦于：\n"
             "1. 本片段独有的核心讨论点与事实。\n"
             "2. 出现的说话人、他们的具体观点、语气及其身份暗示。\n"
@@ -32,7 +34,7 @@ class GlobalMemoryGenerator:
 
         # --- SOTA Prompt: Reduce Phase ---
         self.reduce_prompt_template = (
-            "你是一个高级系统架构师。你的输入是来自多个片段审计师对同一场会议不同时间段的精细报告。\n"
+            "你是一个高级系统架构师。你的输入是来自多个片段审计师对同一份长音频不同时间段的精细报告。\n"
             "报告列表如下：\n"
             "--------------------------\n"
             "{segment_summaries}\n"
@@ -50,38 +52,47 @@ class GlobalMemoryGenerator:
         """
         Map Phase: Extract high-fidelity segment info.
         """
-        print(f"Map Phase -> Processing chunk {idx}...")
+        print(f"App Smart Map -> Processing segment {idx}...")
         with open(file_path, "rb") as f:
             content = f.read()
             
         file_uri, file_name = await self.client.upload_file(
-            content, mime_type="audio/wav", display_name=f"map_chunk_{idx}"
+            content, mime_type="audio/mpeg", display_name=f"summary_chunk_{idx}"
         )
         
         if not await self.client.poll_file_state(file_name):
-            raise RuntimeError(f"Chunk {idx} failed to become ACTIVE.")
+            raise RuntimeError(f"Summary chunk {idx} failed to become ACTIVE.")
             
         response = await self.client.generate_content(
             prompt=self.map_prompt_template.format(idx=idx),
-            mime_type="audio/wav",
+            mime_type="audio/mpeg",
             file_uri=file_uri
         )
         return response
 
-    async def generate(self, source: Any) -> Dict[str, Any]:
+    async def generate(self, file_path: str) -> Dict[str, Any]:
         """
-        Smart dispatcher: Choose Single-Pass or Map-Reduce based on input type.
+        App Smart Orchestration: 
+        Automatically decides between Single-Pass and Map-Reduce based on file characteristics.
         """
-        # If source is a list of paths, use Map-Reduce
-        if isinstance(source, list):
-            print(f"🚀 Initializing Map-Reduce Pipeline for {len(source)} chunks...")
+        # 1. Adaptive Preprocessing
+        output_dir = "data/processed"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        ready_path, strategy = await prepare_audio_for_summary(file_path, output_dir)
+        
+        # 2. Execution Branching
+        if strategy == "map-reduce":
+            print(f"🚀 App Auto-Detected: Oversized file. Initializing Map-Reduce...")
+            # 45m chunks with 5m overlap for SOTA coherence
+            chunks = await get_overlapping_chunks(ready_path, chunk_duration=2700, overlap=300)
             
-            # 1. Map Phase
-            tasks = [self._process_single_chunk(path, i+1) for i, path in enumerate(source)]
+            # Map
+            tasks = [self._process_single_chunk(path, i+1) for i, path in enumerate(chunks)]
             chunk_results = await asyncio.gather(*tasks)
             
-            # 2. Reduce Phase
-            print("\n🏁 Map Phase Complete. Initializing Reduce Phase Aggregation...")
+            # Reduce
+            print("\n🏁 Map Phase Complete. App Orchestrating Reduce Phase Aggregation...")
             segment_summaries = ""
             for i, res in enumerate(chunk_results):
                 text = str(res.get("data", res.get("text", "")))
@@ -94,19 +105,21 @@ class GlobalMemoryGenerator:
             )
             return final_response["data"]
 
-        # If source is bytes, use Single-Pass
         else:
-            print("🚀 Initializing Single-Pass Direct Summary...")
+            print(f"🚀 App Auto-Detected: Efficient size. Initializing Single-Pass Summary...")
+            with open(ready_path, "rb") as f:
+                content = f.read()
+                
             file_uri, file_name = await self.client.upload_file(
-                source, mime_type="audio/wav", display_name="single_pass_summary"
+                content, mime_type="audio/mpeg", display_name="app_single_pass_summary"
             )
             if not await self.client.poll_file_state(file_name):
-                raise RuntimeError("File upload failed for single-pass.")
+                raise RuntimeError("File upload failed for Single-Pass summary.")
                 
             response = await self.client.generate_content(
                 prompt=self.single_pass_prompt,
-                mime_type="audio/wav",
+                mime_type="audio/mpeg",
                 file_uri=file_uri,
-                audio_content=source if self.client.use_inline_data else None
+                audio_content=content if self.client.use_inline_data else None
             )
             return response["data"]

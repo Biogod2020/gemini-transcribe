@@ -23,11 +23,11 @@
     - **Chunk Mode**: High clarity (WAV or Opus 128kbps) for accuracy.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Audio Preprocessing' (Protocol in workflow.md)
 
-## Phase 4: Configurable Sliding Window Implementation
-- [ ] Task: Update `app/graph.py` and `STTState` to include `context_window_size`.
-- [ ] Task: Update `app/transcriber.py` to respect the configurable window size when building prompts.
-- [ ] Task: Add unit tests to verify that context never exceeds the window limit.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Sliding Window' (Protocol in workflow.md)
+## Phase 4: Configurable Sliding Window Implementation [checkpoint: 1731396]
+- [x] Task: Update `app/graph.py` and `STTState` to include `context_window_size`. [1731396]
+- [x] Task: Update `app/transcriber.py` to respect the configurable window size when building prompts. [1731396]
+- [x] Task: Add unit tests to verify that context never exceeds the window limit. [1731396]
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Sliding Window' (Protocol in workflow.md)
 
 ## Phase 5: Feasibility Validation & Baseline Run (2h Audio)
 - [x] Task: Identify a ~2-hour long audio file from the Earnings-22 `test` split. [4f80aab]
