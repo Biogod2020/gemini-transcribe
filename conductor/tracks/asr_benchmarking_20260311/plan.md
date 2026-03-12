@@ -5,12 +5,12 @@
 - [x] Task: Implement `app/utils.py` text normalization helpers. [9134bd3]
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
-## Phase 2: Implementation of Benchmarking Script [checkpoint: b930ae9]
+## Phase 2: Implementation of Benchmarking Script [checkpoint: 867f4a1]
 - [x] Task: Create `scripts/benchmark.py` with HF streaming integration. [e4bfc8a]
 - [x] Task: Re-implement `scripts/benchmark.py` to invoke the full `STTGraph` workflow. [8e5ed03]
 - [x] Task: Implement the model comparison loop (Gemini 3 Flash vs 3.1 Flash Lite). [8e5ed03]
 - [x] Task: Add ground-truth alignment and WER calculation logic for long-form audio. [8e5ed03]
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Script Implementation' (Protocol in workflow.md)
 
 ## Phase 3: Audio Preprocessing & Normalization Utility
 - [ ] Task: Implement a universal audio loader in `app/utils.py` that supports multiple formats (MP3, M4A, etc.) using `pydub`.
