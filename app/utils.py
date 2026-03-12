@@ -47,6 +47,27 @@ def standardize_audio(audio: AudioSegment) -> AudioSegment:
     """
     return audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
 
+def remove_dc_offset(audio: AudioSegment) -> AudioSegment:
+    """
+    Removes DC offset by centering the waveform.
+    """
+    samples = np.array(audio.get_array_of_samples()).astype(np.float32)
+    mean = np.mean(samples)
+    centered_samples = samples - mean
+    
+    # Convert back to original sample width (usually int16)
+    if audio.sample_width == 2:
+        centered_samples = centered_samples.astype(np.int16)
+    
+    return audio._spawn(centered_samples.tobytes())
+
+def add_silence_padding(audio: AudioSegment, padding_ms: int = 100) -> AudioSegment:
+    """
+    Adds silence padding to the beginning and end of an AudioSegment.
+    """
+    silence = AudioSegment.silent(duration=padding_ms, frame_rate=audio.frame_rate)
+    return silence + audio + silence
+
 def parse_json_response(text: str) -> Any:
     """
     Robustly parses JSON from a model response string.

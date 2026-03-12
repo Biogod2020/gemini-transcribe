@@ -71,4 +71,30 @@ def test_standardize_audio():
         mock_audio.set_frame_rate.return_value.set_channels.assert_called_once_with(1)
         mock_audio.set_frame_rate.return_value.set_channels.return_value.set_sample_width.assert_called_once_with(2)
 
+def test_remove_dc_offset():
+    # We can't easily mock the internal array operations of remove_dc_offset
+    # without a real AudioSegment or complex mocks.
+    # Let's use a real small AudioSegment for this one if possible,
+    # or mock the numpy mean/subtraction.
+    from pydub import AudioSegment
+    import numpy as np
+    
+    # Create a 10ms silent mono 16kHz segment
+    audio = AudioSegment.silent(duration=10, frame_rate=16000)
+    
+    from app.utils import remove_dc_offset
+    result = remove_dc_offset(audio)
+    assert isinstance(result, AudioSegment)
+
+def test_add_silence_padding():
+    from pydub import AudioSegment
+    audio = AudioSegment.silent(duration=100, frame_rate=16000)
+    
+    from app.utils import add_silence_padding
+    # Add 100ms padding to each end
+    result = add_silence_padding(audio, padding_ms=100)
+    
+    assert len(result) == 300 # 100 + 100 + 100
+
+
 
