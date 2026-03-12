@@ -14,8 +14,9 @@ async def test_asr_benchmark_uses_graph(mock_global_gen_class, mock_vad_class, m
     Test that ASRBenchmark.run() correctly orchestrates VAD, Global Memory, and the LangGraph.
     """
     # 1. Mock Dataset
+    # pyloudnorm requires at least 0.4s of audio (6400 samples at 16kHz)
     mock_item = {
-        "audio": {"array": np.array([0.1, 0.2], dtype=np.float32), "sampling_rate": 16000},
+        "audio": {"array": np.array([0.1] * 8000, dtype=np.float32), "sampling_rate": 16000},
         "transcript": "official ground truth",
         "segment_id": "call_1"
     }

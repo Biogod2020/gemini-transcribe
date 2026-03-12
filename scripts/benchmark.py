@@ -4,16 +4,19 @@ import json
 import logging
 import random
 import tempfile
+import io
 from datetime import datetime
+from typing import List, Dict, Any
+
 import evaluate
 from datasets import load_dataset
 import soundfile as sf
-import io
 import numpy as np
-from typing import List, Dict, Any
+from pydub import AudioSegment
+
 from app.gemini_client import GeminiClient
 from app.config import config
-from app.utils import normalize_text
+from app.utils import normalize_text, preprocess_audio, add_silence_padding
 from app.vad_processor import VADProcessor
 from app.global_memory_generator import GlobalMemoryGenerator
 from app.graph import build_stt_graph
@@ -65,16 +68,6 @@ class ASRBenchmark:
         
         return [client_flash, client_lite]
 
-    def _prepare_audio_file(self, audio_array, sample_rate, temp_dir) -> str:
-        """Save array to a temporary file and return path."""
-        fd, path = tempfile.mkstemp(suffix=".mp3", dir=temp_dir)
-        os.close(fd)
-        # Convert to float32 for sf.write if necessary
-        if audio_array.dtype != np.float32:
-            audio_array = audio_array.astype(np.float32)
-        sf.write(path, audio_array, sample_rate)
-        return path
-
     async def run(self, take_samples: int = 3):
         logger.info(f"Starting benchmark on {self.dataset_name}")
         clients = self._setup_clients()
@@ -85,41 +78,64 @@ class ASRBenchmark:
         self.metadata["samples_requested"] = take_samples
 
         for idx, item in enumerate(dataset):
-            audio_array = item["audio"]["array"]
-            sample_rate = item["audio"]["sampling_rate"]
-            # Some datasets use 'transcript' or 'text'
+            raw_audio_array = item["audio"]["array"]
+            raw_sample_rate = item["audio"]["sampling_rate"]
             reference = normalize_text(item.get("transcript") or item.get("text", ""))
             sample_id = item.get("segment_id") or f"sample_{idx}"
             
             logger.info(f"Processing sample {idx} ({sample_id})...")
-            
             sample_data = {"id": idx, "sample_id": sample_id, "reference": reference}
             
-            for client in clients:
-                model_id = client.model.replace("-", "_").replace(".", "_")
-                logger.info(f"  Running workflow for model: {client.model}")
+            # Temporary file for the raw stream to allow preprocessing
+            with tempfile.TemporaryDirectory() as temp_run_dir:
+                raw_path = os.path.join(temp_run_dir, "raw_stream.wav")
+                sf.write(raw_path, raw_audio_array, raw_sample_rate)
                 
-                try:
-                    # 1. Run VAD to get chunks
-                    # Note: We need physical files for the Graph
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        # VAD expects audio_data as np.ndarray
-                        raw_chunks = self.vad.get_chunks(audio_array, sample_rate)
-                        chunk_paths = []
-                        for i, chunk_arr in enumerate(raw_chunks):
-                            p = self._prepare_audio_file(chunk_arr, sample_rate, temp_dir)
-                            chunk_paths.append(p)
-                        
-                        # 2. Generate Global Memory
-                        # Convert full audio to bytes for Global Memory
-                        buffer = io.BytesIO()
-                        sf.write(buffer, audio_array, sample_rate, format='wav')
-                        audio_bytes = buffer.getvalue()
-                        
+                # 1. Preprocess (LUFS, Resample, Mono)
+                logger.info(f"  Preprocessing audio (LUFS normalization, 16kHz Mono)...")
+                audio_segment = preprocess_audio(raw_path)
+                
+                # Update array and sample rate from normalized segment for VAD
+                audio_array = np.array(audio_segment.get_array_of_samples()).astype(np.float32)
+                max_val = float(2**(8 * audio_segment.sample_width - 1))
+                audio_array = audio_array / max_val
+                sample_rate = audio_segment.frame_rate
+
+                # 2. Run VAD to get chunks
+                logger.info(f"  Running VAD and adding silence padding to chunks...")
+                raw_chunks = self.vad.get_chunks(audio_array, sample_rate)
+                chunk_paths = []
+                for i, chunk_arr in enumerate(raw_chunks):
+                    # Convert chunk back to AudioSegment to add padding
+                    # pydub expects raw bytes
+                    chunk_bytes = (chunk_arr * 32767).astype(np.int16).tobytes()
+                    chunk_segment = AudioSegment(
+                        chunk_bytes, 
+                        frame_rate=sample_rate,
+                        sample_width=2, 
+                        channels=1
+                    )
+                    # Add 100ms padding
+                    padded_chunk = add_silence_padding(chunk_segment, padding_ms=100)
+                    
+                    # Save to temp file for Graph
+                    p = os.path.join(temp_run_dir, f"chunk_{i}.mp3")
+                    padded_chunk.export(p, format="mp3")
+                    chunk_paths.append(p)
+                
+                # 3. Prepare full audio bytes for Global Memory (from normalized segment)
+                buffer = io.BytesIO()
+                audio_segment.export(buffer, format="wav")
+                audio_bytes = buffer.getvalue()
+
+                for client in clients:
+                    model_id = client.model.replace("-", "_").replace(".", "_")
+                    logger.info(f"  Running workflow for model: {client.model}")
+                    
+                    try:
                         global_gen = GlobalMemoryGenerator(client)
                         global_memory = await global_gen.generate(audio_bytes, display_name=sample_id)
                         
-                        # 3. Invoke Graph
                         initial_state = {
                             "project_id": f"bench_{sample_id}",
                             "global_memory": global_memory,
@@ -133,7 +149,6 @@ class ASRBenchmark:
                         
                         final_state = await self.graph.ainvoke(initial_state)
                         
-                        # 4. Concatenate result
                         full_prediction = " ".join([c["transcript"] for c in final_state["processed_chunks"]])
                         normalized_pred = normalize_text(full_prediction)
                         
@@ -142,10 +157,10 @@ class ASRBenchmark:
                             "wer": self.wer_metric.compute(predictions=[normalized_pred], references=[reference]),
                             "chunks": len(final_state["processed_chunks"])
                         }
-                        
-                except Exception as e:
-                    logger.error(f"  Model {client.model} failed on sample {idx}: {e}")
-                    sample_data[model_id] = {"error": str(e)}
+                            
+                    except Exception as e:
+                        logger.error(f"  Model {client.model} failed on sample {idx}: {e}")
+                        sample_data[model_id] = {"error": str(e)}
             
             self.results.append(sample_data)
 

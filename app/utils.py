@@ -34,7 +34,7 @@ def normalize_audio_lufs(audio: AudioSegment, target_lufs: float = -16.0) -> Aud
     
     # Measure current loudness
     meter = pyln.Meter(audio.frame_rate)
-    loudness = meter.measure(samples)
+    loudness = meter.integrated_loudness(samples)
     
     # Calculate gain to apply
     gain_db = target_lufs - loudness
@@ -67,6 +67,16 @@ def add_silence_padding(audio: AudioSegment, padding_ms: int = 100) -> AudioSegm
     """
     silence = AudioSegment.silent(duration=padding_ms, frame_rate=audio.frame_rate)
     return silence + audio + silence
+
+def preprocess_audio(file_path: str, target_lufs: float = -16.0) -> AudioSegment:
+    """
+    Full preprocessing pipeline: Load -> DC Offset -> Normalize -> Standardize.
+    """
+    audio = load_audio(file_path)
+    audio = remove_dc_offset(audio)
+    audio = normalize_audio_lufs(audio, target_lufs=target_lufs)
+    audio = standardize_audio(audio)
+    return audio
 
 def parse_json_response(text: str) -> Any:
     """
