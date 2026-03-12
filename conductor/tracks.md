@@ -9,5 +9,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Fast Audio Preprocessing for Long Samples (2h+)**
+- [~] **Track: Fast Audio Preprocessing for Long Samples (2h+)**
 *Link: [./tracks/fast_audio_preprocess_20260312/](./tracks/fast_audio_preprocess_20260312/)*

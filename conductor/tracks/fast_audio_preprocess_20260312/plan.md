@@ -1,9 +1,9 @@
 # Implementation Plan: Fast Audio Preprocessing for Long Samples (2h+)
 
 ## Phase 1: Dependency & Utility Setup
-- [ ] Task: Update `pyproject.toml` with `httpx` and `ffmpeg-python` (or similar) for streaming.
-- [ ] Task: Implement `app/downloader.py` to handle chunked streaming from a URL.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
+- [x] Task: Update `pyproject.toml` with `httpx` and `ffmpeg-python` (or similar) for streaming. [d3d8d4c]
+- [x] Task: Implement `app/downloader.py` to handle chunked streaming from a URL. [122a7d0]
+- [~] Task: Conductor - User Manual Verification 'Phase 1: Setup' (Protocol in workflow.md)
 
 ## Phase 2: Concurrent Download & Preprocessing Utility
 - [ ] Task: Create `scripts/fast_preprocess.py` to pipe `httpx` stream to **multiple** outputs:

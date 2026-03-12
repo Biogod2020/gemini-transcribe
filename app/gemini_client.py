@@ -117,10 +117,19 @@ class GeminiClient:
             generationConfig=gen_config
         )
         
-        # Official Gemini 3.x v1beta seems to expect snake_case for these new fields
-        # while existing fields like responseMimeType work in both.
-        # request.model_dump(by_alias=False) gives us snake_case.
-        payload = request.model_dump(by_alias=False, exclude_none=True)
+        # Use official camelCase by default (by_alias=True) for standard fields like inlineData
+        payload = request.model_dump(by_alias=True, exclude_none=True)
+        
+        # Manually convert thinkingConfig part back to snake_case if it exists,
+        # as tested to be the required format for Gemini 3.x v1beta.
+        if "generationConfig" in payload and "thinkingConfig" in payload["generationConfig"]:
+            tc = payload["generationConfig"].pop("thinkingConfig")
+            # Create the snake_case version manually to be 100% sure
+            payload["generationConfig"]["thinking_config"] = {
+                "include_thoughts": tc.get("include_thoughts", True),
+                "thinking_level": tc.get("thinkingLevel"),
+                "thinking_budget": tc.get("thinkingBudget")
+            }
         
         async with httpx.AsyncClient(timeout=300.0) as client:
             for attempt in range(3):
