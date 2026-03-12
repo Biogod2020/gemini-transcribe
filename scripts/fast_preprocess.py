@@ -37,13 +37,13 @@ async def fast_preprocess(url: str, output_low: str, output_high: str):
 
     try:
         async for chunk in stream_download(url):
-            # Write to both concurrently
-            # Note: In a production environment with very large files,
-            # we should handle potential backpressure by awaiting the drain()
-            if proc_low.stdin:
+            # Write to both concurrently and handle backpressure
+            if proc_low.stdin and not proc_low.stdin.is_closing():
                 proc_low.stdin.write(chunk)
-            if proc_high.stdin:
+                await proc_low.stdin.drain()
+            if proc_high.stdin and not proc_high.stdin.is_closing():
                 proc_high.stdin.write(chunk)
+                await proc_high.stdin.drain()
             
             # Simple yield to avoid blocking
             await asyncio.sleep(0)
