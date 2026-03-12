@@ -21,7 +21,7 @@ async def test_fast_preprocess_integration():
     if os.path.exists(high): os.remove(high)
     
     with patch("scripts.fast_preprocess.stream_download", side_effect=mock_stream_download):
-        await fast_preprocess("http://dummy.url", low, high)
+        await fast_preprocess("http://dummy.url", "orig.wav", low, high, is_url=True)
     
     assert os.path.exists(low)
     assert os.path.exists(high)

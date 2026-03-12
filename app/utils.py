@@ -117,7 +117,7 @@ async def get_audio_duration(file_path: str) -> float:
     stdout, _ = await process.communicate()
     return float(stdout.decode().strip())
 
-async def get_overlapping_chunks(file_path: str, chunk_duration: float = 1200, overlap: float = 120) -> List[str]:
+async def get_overlapping_chunks(file_path: str, chunk_duration: float = 2700, overlap: float = 300) -> List[str]:
     """
     Splits audio into overlapping chunks.
     Default: 20 min chunks with 2 min overlap.

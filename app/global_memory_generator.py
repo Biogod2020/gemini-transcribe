@@ -107,6 +107,6 @@ class GlobalMemoryGenerator:
                 prompt=self.single_pass_prompt,
                 mime_type="audio/wav",
                 file_uri=file_uri,
-                audio_content=source
+                audio_content=source if self.client.use_inline_data else None
             )
             return response["data"]
