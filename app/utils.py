@@ -41,6 +41,12 @@ def normalize_audio_lufs(audio: AudioSegment, target_lufs: float = -16.0) -> Aud
     
     return audio.apply_gain(gain_db)
 
+def standardize_audio(audio: AudioSegment) -> AudioSegment:
+    """
+    Converts AudioSegment to 16kHz, Mono, 16-bit.
+    """
+    return audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+
 def parse_json_response(text: str) -> Any:
     """
     Robustly parses JSON from a model response string.

@@ -58,3 +58,17 @@ def test_normalize_audio_lufs():
             # Should calculate gain: -16.0 - (-25.0) = +9.0 dB
             mock_audio.apply_gain.assert_called_once_with(9.0)
 
+def test_standardize_audio():
+    mock_audio = MagicMock()
+    
+    with patch("app.utils.AudioSegment") as mock_as_class:
+        from app.utils import standardize_audio
+        result = standardize_audio(mock_audio)
+        
+        # Should set frame rate to 16000 and channels to 1
+        mock_audio.set_frame_rate.assert_called_once_with(16000)
+        # set_channels might be chained or separate
+        mock_audio.set_frame_rate.return_value.set_channels.assert_called_once_with(1)
+        mock_audio.set_frame_rate.return_value.set_channels.return_value.set_sample_width.assert_called_once_with(2)
+
+
