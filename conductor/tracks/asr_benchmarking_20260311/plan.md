@@ -17,7 +17,7 @@
 - [x] Task: Implement **LUFS Normalization (EBU R128)** with a target of **-16.0 LUFS**. [b217b85]
 - [x] Task: Integrate automatic resampling to **16kHz 16-bit Mono** into the preprocessing pipeline. [9aabd61]
 - [x] Task: Add **DC Offset removal** and **Silence Padding (100ms)**. [d862684]
-- [ ] Task: Update the `STTGraph` or `ASRBenchmark` to invoke this preprocessing before VAD.
+- [x] Task: Update the `STTGraph` or `ASRBenchmark` to invoke this preprocessing before VAD. [398da91]
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Audio Preprocessing' (Protocol in workflow.md)
 
 ## Phase 4: Feasibility Validation (2h Audio)
