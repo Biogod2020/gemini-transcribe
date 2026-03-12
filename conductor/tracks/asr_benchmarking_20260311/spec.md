@@ -15,8 +15,9 @@ This track implements a standardized benchmarking suite to evaluate the `gemini-
    - Calculate Word Error Rate (WER) using the `evaluate` library.
    - Compare the concatenated transcript from our sliding window workflow against the official ground truth transcript provided in the dataset.
 3. **Audio Preprocessing & Normalization**:
-   - Implement loudness normalization (e.g., Peak or LUFS normalization) to ensure consistent volume levels across different audio sources.
-   - Standardize sample rate (16kHz) and channel count (Mono) before sending to the model.
+   - **Universal Format Support**: Ensure the system can accept all common audio formats (MP3, WAV, M4A, FLAC, etc.) by implementing automatic transcoding.
+   - **Normalization**: Implement loudness normalization (e.g., Peak or LUFS normalization) to ensure consistent volume levels across different audio sources.
+   - **Standardization**: Convert all inputs to a uniform format (16kHz, Mono, WAV/MP3) before processing by VAD and the model.
 4. **Reporting**:
    - Generate a JSON result for each run in `output/benchmarks/`.
    - Produce a comparative Markdown report summarizing the WER and qualitative strengths/weaknesses observed during the 1-hour processing runs.
