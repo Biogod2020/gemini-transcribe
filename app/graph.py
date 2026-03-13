@@ -1,9 +1,10 @@
 import json
 import os
-from typing import TypedDict, List, Dict, Any
+import asyncio
+from typing import TypedDict, List, Dict, Any, Optional, Literal
 from langgraph.graph import StateGraph, END
 from app.gemini_client import GeminiClient
-from app.transcriber import build_transcription_prompt, parse_transcription_response
+from app.transcriber import build_transcription_prompt
 
 class STTState(TypedDict):
     project_id: str
@@ -13,49 +14,23 @@ class STTState(TypedDict):
     current_chunk_index: int
     api_key: str
     model_name: str
+    base_url: str
     use_inline_data: bool
     context_window_size: int
+    strategy: Literal["sota", "baseline"]
 
-async def transcribe_chunk_node(state: STTState) -> STTState:
-    """
-    This node processes the current chunk using Gemini.
-    It uploads the chunk, builds the prompt with context, and parses the response.
-    """
-    current_index = state["current_chunk_index"]
-    chunks = state["chunks_to_process"]
-    window_size = state.get("context_window_size", 2)
-
-    if current_index >= len(chunks):
-        return state
-
-    file_path = chunks[current_index]
-    client = GeminiClient(api_key=state["api_key"], model=state["model_name"], use_inline_data=state.get("use_inline_data", False))
-
-    print(f"--- Processing Chunk {current_index}/{len(chunks)}: {os.path.basename(file_path)} ---")
-
-    # 1. Upload chunk
-    with open(file_path, "rb") as f:
-        content = f.read()
-
-    file_uri, file_name = await client.upload_file(
-        content,
-        mime_type="audio/mpeg",
-        display_name=f"chunk_{current_index}"
-    )
-
-    # 2. Wait for ACTIVE state (if not using inline data)
-    is_ready = await client.poll_file_state(file_name)
-    if not is_ready:
-        print(f"Error: Chunk {current_index} failed to upload.")
-        return state
-
-    # 3. Build Prompt
-    prompt = build_transcription_prompt(
-        state["global_memory"], 
-        state["processed_chunks"],
-        context_window_size=window_size
-    )
-    # 4. Define Response Schema (Force ARRAY of OBJECTS)
+async def _request_transcription(
+    client: GeminiClient, 
+    file_path: str, 
+    idx: int, 
+    prompt: str, 
+    content: bytes
+) -> Dict[str, Any]:
+    """Shared core for transcription requests."""
+    file_uri, file_name = await client.upload_file(content, mime_type="audio/mpeg", display_name=f"chunk_{idx}")
+    if not await client.poll_file_state(file_name):
+        raise RuntimeError(f"Chunk {idx} upload failed.")
+        
     response_schema = {
         "type": "ARRAY",
         "items": {
@@ -67,89 +42,67 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
             "required": ["speaker_id", "text"]
         }
     }
+    
+    response = await client.generate_content(
+        prompt=prompt, mime_type="audio/mpeg", file_uri=file_uri, 
+        audio_content=content, response_schema=response_schema
+    )
+    
+    raw_response = response["data"]
+    transcript_list = raw_response if isinstance(raw_response, list) else [{"speaker_id": "Unknown", "text": str(raw_response)}]
+    transcript_str = "\n".join([f"{item.get('speaker_id', 'Unknown')}: {item.get('text', '')}" for item in transcript_list])
+    
+    return {
+        "chunk_index": idx, "transcript": transcript_str, 
+        "raw_json": transcript_list, "thought": response.get("thought", "")
+    }
 
-    # 5. Generate Transcription
-    try:
-        response = await client.generate_content(
-            prompt=prompt,
-            mime_type="audio/mpeg",
-            file_uri=file_uri,
-            audio_content=content,
-            response_schema=response_schema
-        )
-        
-        raw_response = response["data"]
-        thoughts = response["thought"]
-        
-        # Check if raw_response is already a list or needs parsing from a string
-        if isinstance(raw_response, list):
-            transcript_list = raw_response
-        elif isinstance(raw_response, dict) and "transcript" in raw_response:
-            transcript_list = raw_response["transcript"]
-        else:
-            # Fallback if it's a string inside a dict
-            transcript_list = raw_response
+async def transcribe_chunk_node(state: STTState) -> STTState:
+    """Sequential SOTA processing."""
+    idx = state["current_chunk_index"]
+    if idx >= len(state["chunks_to_process"]): return state
+    
+    client = GeminiClient(api_key=state["api_key"], model=state["model_name"], base_url=state.get("base_url"), use_inline_data=state.get("use_inline_data", False))
+    with open(state["chunks_to_process"][idx], "rb") as f: content = f.read()
+    
+    prompt = build_transcription_prompt(state["global_memory"], state["processed_chunks"], context_window_size=state.get("context_window_size", 2))
+    new_chunk = await _request_transcription(client, state["chunks_to_process"][idx], idx, prompt, content)
+    
+    return {**state, "processed_chunks": state["processed_chunks"] + [new_chunk], "current_chunk_index": idx + 1}
 
-        # Format transcript as a string for context in next rounds
-        if isinstance(transcript_list, list) and all(isinstance(i, dict) for i in transcript_list):
-            transcript_str = "\n".join([f"{item.get('speaker_id', 'Unknown')}: {item.get('text', '')}" for item in transcript_list])
-        elif isinstance(transcript_list, list):
-            transcript_str = "\n".join([str(item) for item in transcript_list])
-        else:
-            transcript_str = str(transcript_list)
-            # If it's just a raw string, we might want to wrap it in a pseudo list for the raw_json field
-            transcript_list = [{"speaker_id": "Unknown", "text": transcript_str}]
-        
-        new_chunk = {
-            "chunk_index": current_index,
-            "transcript": transcript_str,
-            "raw_json": transcript_list,
-            "thought": thoughts
-        }
-        
-        return {
-            **state,
-            "processed_chunks": state["processed_chunks"] + [new_chunk],
-            "current_chunk_index": current_index + 1
-        }
-    except Exception as e:
-        print(f"Error transcribing chunk {current_index}: {e}")
-        return {
-            **state,
-            "current_chunk_index": current_index + 1
-        }
+async def parallel_transcribe_node(state: STTState) -> STTState:
+    """Parallel Baseline processing (5 concurrency)."""
+    client = GeminiClient(api_key=state["api_key"], model=state["model_name"], base_url=state.get("base_url"), use_inline_data=state.get("use_inline_data", False))
+    semaphore = asyncio.Semaphore(5)
+    
+    async def sem_request(path, i):
+        async with semaphore:
+            with open(path, "rb") as f: content = f.read()
+            prompt = "Please transcribe this audio accurately. Output a JSON array of objects with speaker_id and text."
+            return await _request_transcription(client, path, i, prompt, content)
 
-def finalize_node(state: STTState) -> STTState:
-    """
-    This node runs after all chunks are processed.
-    """
-    print("--- Transcription Complete ---")
-    return state
-
-def should_continue(state: STTState) -> str:
-    """
-    Determine if we should continue processing chunks or finalize.
-    """
-    if state["current_chunk_index"] < len(state["chunks_to_process"]):
-        return "transcribe_chunk"
-    return "finalize"
+    tasks = [sem_request(p, i) for i, p in enumerate(state["chunks_to_process"])]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    processed = [res for res in results if not isinstance(res, Exception)]
+    
+    return {**state, "processed_chunks": sorted(processed, key=lambda x: x["chunk_index"]), "current_chunk_index": len(state["chunks_to_process"])}
 
 def build_stt_graph():
-    """
-    Builds the LangGraph state machine.
-    """
     workflow = StateGraph(STTState)
+    workflow.add_node("sota_transcribe", transcribe_chunk_node)
+    workflow.add_node("baseline_transcribe", parallel_transcribe_node)
     
-    # Add nodes
-    workflow.add_node("transcribe_chunk", transcribe_chunk_node)
-    workflow.add_node("finalize", finalize_node)
+    # Simple routing based on strategy
+    workflow.set_conditional_entry_point(
+        lambda s: s.get("strategy", "sota"),
+        {"sota": "sota_transcribe", "baseline": "baseline_transcribe"}
+    )
     
-    # Define edges
-    workflow.set_entry_point("transcribe_chunk")
-    workflow.add_conditional_edges("transcribe_chunk", should_continue, {
-        "transcribe_chunk": "transcribe_chunk",
-        "finalize": "finalize"
-    })
-    workflow.add_edge("finalize", END)
+    workflow.add_conditional_edges(
+        "sota_transcribe",
+        lambda s: "continue" if s["current_chunk_index"] < len(s["chunks_to_process"]) else "end",
+        {"continue": "sota_transcribe", "end": END}
+    )
+    workflow.add_edge("baseline_transcribe", END)
     
     return workflow.compile()
