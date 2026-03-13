@@ -9,9 +9,9 @@ class Config:
         ]
         self.DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
         
-        # Using official Google Generative Language API or Local Proxy (default to 7861)
-        self.BASE_URL = os.environ.get("GEMINI_BASE_URL", "http://localhost:7861/v1beta")
-        self.UPLOAD_URL = os.environ.get("GEMINI_UPLOAD_URL", "http://localhost:7861/upload/v1beta/files")
+        # Using official Google Generative Language API or Local Proxy
+        self.BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta")
+        self.UPLOAD_URL = os.environ.get("GEMINI_UPLOAD_URL", "https://generativelanguage.googleapis.com/upload/v1beta/files")
         
         # API Key management
         self.API_KEY = self._load_api_key()

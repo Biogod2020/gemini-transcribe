@@ -4,5 +4,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Standardized ASR Benchmarking Suite**
-*Link: [./tracks/asr_benchmarking_20260311/](./tracks/asr_benchmarking_20260311/)*

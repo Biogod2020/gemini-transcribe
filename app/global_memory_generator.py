@@ -8,6 +8,7 @@ from app.utils import prepare_audio_for_summary, get_overlapping_chunks
 class GlobalMemoryGenerator:
     def __init__(self, client: GeminiClient):
         self.client = client
+        self.semaphore = asyncio.Semaphore(5) # Concurrency control for Map phase
         
         # --- SOTA Prompt: Single Pass (Direct) ---
         self.single_pass_prompt = (
@@ -24,7 +25,7 @@ class GlobalMemoryGenerator:
 
         # --- SOTA Prompt: Map Phase ---
         self.map_prompt_template = (
-            "你是一个精密的审计分析师。你正在听一段长音频的分块（带重叠）。\n"
+            "你是一个精密的审计分析师。你正在听一段长音频的分块（无重叠）。\n"
             "你的任务是为后续的全局聚合提供高保真的碎片化信息。请聚焦于：\n"
             "1. 本片段独有的核心讨论点与事实。\n"
             "2. 出现的说话人、他们的具体观点、语气及其身份暗示。\n"
@@ -50,48 +51,44 @@ class GlobalMemoryGenerator:
 
     async def _process_single_chunk(self, file_path: str, idx: int) -> Dict[str, Any]:
         """
-        Map Phase: Extract high-fidelity segment info.
+        Map Phase with Concurrency Control and Memory Efficiency.
         """
-        print(f"App Smart Map -> Processing segment {idx}...")
-        with open(file_path, "rb") as f:
-            content = f.read()
+        async with self.semaphore:
+            print(f"App Smart Map -> Processing segment {idx}...")
             
-        file_uri, file_name = await self.client.upload_file(
-            content, mime_type="audio/mpeg", display_name=f"summary_chunk_{idx}"
-        )
-        
-        if not await self.client.poll_file_state(file_name):
-            raise RuntimeError(f"Summary chunk {idx} failed to become ACTIVE.")
+            # Pass file path instead of bytes to save memory
+            file_uri, file_name = await self.client.upload_file(
+                file_path, mime_type="audio/mpeg", display_name=f"summary_chunk_{idx}"
+            )
             
-        response = await self.client.generate_content(
-            prompt=self.map_prompt_template.format(idx=idx),
-            mime_type="audio/mpeg",
-            file_uri=file_uri
-        )
-        return response
+            if not await self.client.poll_file_state(file_name):
+                raise RuntimeError(f"Summary chunk {idx} failed to become ACTIVE.")
+                
+            response = await self.client.generate_content(
+                prompt=self.map_prompt_template.format(idx=idx),
+                mime_type="audio/mpeg",
+                file_uri=file_uri
+            )
+            return response
 
     async def generate(self, file_path: str) -> Dict[str, Any]:
         """
         App Smart Orchestration: 
-        Automatically decides between Single-Pass and Map-Reduce based on file characteristics.
+        Automatically decides between Single-Pass and Map-Reduce.
         """
-        # 1. Adaptive Preprocessing
         output_dir = "data/processed"
         os.makedirs(output_dir, exist_ok=True)
         
         ready_path, strategy = await prepare_audio_for_summary(file_path, output_dir)
         
-        # 2. Execution Branching
         if strategy == "map-reduce":
             print(f"🚀 App Auto-Detected: Oversized file. Initializing Map-Reduce...")
-            # 45m chunks with 5m overlap for SOTA coherence
-            chunks = await get_overlapping_chunks(ready_path, chunk_duration=2700, overlap=300)
+            # 45m chunks, 0 overlap as requested
+            chunks = await get_overlapping_chunks(ready_path, chunk_duration=2700, overlap=0)
             
-            # Map
             tasks = [self._process_single_chunk(path, i+1) for i, path in enumerate(chunks)]
             chunk_results = await asyncio.gather(*tasks)
             
-            # Reduce
             print("\n🏁 Map Phase Complete. App Orchestrating Reduce Phase Aggregation...")
             segment_summaries = ""
             for i, res in enumerate(chunk_results):
@@ -107,19 +104,22 @@ class GlobalMemoryGenerator:
 
         else:
             print(f"🚀 App Auto-Detected: Efficient size. Initializing Single-Pass Summary...")
-            with open(ready_path, "rb") as f:
-                content = f.read()
-                
+            # Use file path for upload instead of bytes
             file_uri, file_name = await self.client.upload_file(
-                content, mime_type="audio/mpeg", display_name="app_single_pass_summary"
+                ready_path, mime_type="audio/mpeg", display_name="app_single_pass_summary"
             )
             if not await self.client.poll_file_state(file_name):
                 raise RuntimeError("File upload failed for Single-Pass summary.")
                 
+            # Only read for audio_content if using inline mode
+            audio_content = None
+            if self.client.use_inline_data:
+                with open(ready_path, "rb") as f: audio_content = f.read()
+
             response = await self.client.generate_content(
                 prompt=self.single_pass_prompt,
                 mime_type="audio/mpeg",
                 file_uri=file_uri,
-                audio_content=content if self.client.use_inline_data else None
+                audio_content=audio_content
             )
             return response["data"]

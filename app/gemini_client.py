@@ -3,7 +3,9 @@ import asyncio
 import httpx
 import base64
 import os
-from typing import Tuple, Dict, Any
+import time
+import random
+from typing import Tuple, Dict, Any, Optional, Union
 from app.config import config
 
 from app.models import (
@@ -22,7 +24,6 @@ class GeminiClient:
         
         if self.is_lite_31:
             self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-            # Priority: .env/geminiapikey.txt or OS Environment for official key
             self.api_key = os.environ.get("GEMINI_API_KEY") or config.API_KEY
             self.use_inline_data = use_inline_data if use_inline_data is not None else config.USE_INLINE_DATA
             self.is_local = False
@@ -44,14 +45,26 @@ class GeminiClient:
         self.upload_url = f"{self.base_url.replace('/v1beta', '/upload/v1beta')}/files" if not self.is_local else self.base_url
         self.thinking_level = thinking_level or config.THINKING_LEVEL
 
-    async def upload_file(self, content: bytes, mime_type: str, display_name: str) -> Tuple[str, str]:
+    async def upload_file(self, source: Union[bytes, str], mime_type: str, display_name: str) -> Tuple[str, str]:
+        """
+        Uploads a file using resumable protocol. Supports both raw bytes and file paths.
+        """
         if self.use_inline_data:
             return "inline_mode", "inline_mode"
+
+        if isinstance(source, str):
+            file_size = os.path.getsize(source)
+            def get_content():
+                with open(source, "rb") as f: return f.read()
+            content = await asyncio.to_thread(get_content)
+        else:
+            file_size = len(source)
+            content = source
             
         headers = {
             "X-Goog-Upload-Protocol": "resumable",
             "X-Goog-Upload-Command": "start",
-            "X-Goog-Upload-Header-Content-Length": str(len(content)),
+            "X-Goog-Upload-Header-Content-Length": str(file_size),
             "X-Goog-Upload-Header-Content-Type": mime_type,
             "Content-Type": "application/json"
         }
@@ -72,7 +85,7 @@ class GeminiClient:
                 headers={
                     "X-Goog-Upload-Command": "upload, finalize",
                     "X-Goog-Upload-Offset": "0",
-                    "Content-Length": str(len(content))
+                    "Content-Length": str(file_size)
                 },
                 content=content
             )
@@ -99,14 +112,11 @@ class GeminiClient:
                 await asyncio.sleep(interval)
         return False
 
-    async def generate_content(self, prompt: str, mime_type: str, file_uri: str = None, audio_content: bytes = None, response_schema: Any = None) -> Dict[str, Any]:
+    async def generate_content(self, prompt: str, mime_type: str, file_uri: str = None, audio_content: Optional[bytes] = None, response_schema: Any = None) -> Dict[str, Any]:
         """
-        Call Gemini generateContent with a file URI or inline data and a prompt.
-        Handles native thinking and structured output.
-        Returns: {"data": parsed_json, "thought": thoughts_string}
+        Call Gemini generateContent with exponential backoff and jitter.
         """
         url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
-        
         parts = [Part(text=prompt)]
         
         if self.use_inline_data and audio_content:
@@ -120,11 +130,10 @@ class GeminiClient:
                 fileUri=file_uri
             )))
         
-        # Consistent snake_case for thinking_config as required by Gemini 3.x v1beta (official & local)
         thinking_config = ThinkingConfig(
             include_thoughts=True,
             thinking_level=self.thinking_level,
-            thinking_budget=None # Omit budget when level is provided
+            thinking_budget=None
         )
         
         gen_config = GenerationConfig(
@@ -138,35 +147,27 @@ class GeminiClient:
             generationConfig=gen_config
         )
         
-        # Use official camelCase by default (by_alias=True) for standard fields like inlineData
         payload = request.model_dump(by_alias=True, exclude_none=True)
-        
-        # Manually convert thinkingConfig part back to snake_case if it exists,
-        # as tested to be the required format for Gemini 3.x v1beta.
         if "generationConfig" in payload and "thinkingConfig" in payload["generationConfig"]:
             tc = payload["generationConfig"].pop("thinkingConfig")
-            # Create the snake_case version manually to be 100% sure
             payload["generationConfig"]["thinking_config"] = {
                 "include_thoughts": tc.get("include_thoughts", True),
-                "thinking_level": tc.get("thinkingLevel"),
-                "thinking_budget": tc.get("thinkingBudget")
+                "thinking_level": tc.get("thinking_level") or tc.get("thinkingLevel"),
+                "thinking_budget": tc.get("thinking_budget") or tc.get("thinkingBudget")
             }
         
-        import time, random
         payload_size_mb = len(json.dumps(payload)) / (1024 * 1024)
         print(f">>> GeminiClient: Sending request ({payload_size_mb:.2f} MB payload)...")
         
-        start_req = time.time()
+        start_time_req = time.time()
+        max_attempts = 6
         async with httpx.AsyncClient(timeout=600.0) as client:
-            max_attempts = 6
             for attempt in range(max_attempts):
                 try:
                     resp = await client.post(url, json=payload)
                     
                     if resp.status_code in [429, 503] and attempt < max_attempts - 1:
-                        # SOTA Backoff: Exponential + Jitter
                         wait_time = (2 ** attempt) + random.uniform(0, 1)
-                        # Check for official retry hints
                         retry_after = resp.headers.get("Retry-After")
                         if retry_after and retry_after.isdigit():
                             wait_time = max(wait_time, int(retry_after))
@@ -185,7 +186,7 @@ class GeminiClient:
                     print(f">>> GeminiClient: Request attempt {attempt+1} failed: {e}. Retrying in {wait_time:.2f}s...")
                     await asyncio.sleep(wait_time)
             
-            req_duration = time.time() - start_req
+            req_duration = time.time() - start_time_req
             print(f">>> GeminiClient: Response received in {req_duration:.2f}s.")
             result = resp.json()
             extracted = extract_content_and_thoughts(result)
