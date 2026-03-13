@@ -17,9 +17,9 @@ class BenchmarkOrchestrator:
         self.metrics = MetricsCalculator()
         self.graph = build_stt_graph()
 
-    async def run_variant(self, model: str, strategy: Literal["sota", "baseline"], audio_path: str, reference_text: str, base_url: str = None) -> Dict[str, Any]:
+    async def run_variant(self, model: str, strategy: Literal["sota", "baseline"], audio_path: str, reference_text: str, base_url: str = None, chunk_limit: int = None) -> Dict[str, Any]:
         """Runs a single (Model, Strategy) benchmark variant."""
-        print(f"\n🚀 --- Running Variant: Model={model}, Strategy={strategy} ---")
+        print(f"\n🚀 --- Running Variant: Model={model}, Strategy={strategy} (Limit: {chunk_limit}) ---")
         start_time = time.time()
         
         # 1. Init Client
@@ -33,7 +33,9 @@ class BenchmarkOrchestrator:
             
         # 3. Prepare Chunks
         chunks = await get_overlapping_chunks(audio_path, chunk_duration=240, overlap=0)
-        
+        if chunk_limit:
+            chunks = chunks[:chunk_limit]
+            
         # 4. Invoke Graph
         initial_state: STTState = {
             "project_id": f"bench_{strategy}_{int(time.time())}",
@@ -70,11 +72,11 @@ class BenchmarkOrchestrator:
             
         return result
 
-    async def run_matrix(self, matrix: List[Dict[str, Any]], audio_path: str, reference_text: str, base_url: str = None):
+    async def run_matrix(self, matrix: List[Dict[str, Any]], audio_path: str, reference_text: str, base_url: str = None, chunk_limit: int = None):
         """Runs the full test matrix and generates a leaderboard."""
         results = []
         for item in matrix:
-            res = await self.run_variant(item["model"], item["strategy"], audio_path, reference_text, base_url)
+            res = await self.run_variant(item["model"], item["strategy"], audio_path, reference_text, base_url, chunk_limit=chunk_limit)
             results.append(res)
             
         # Generate Final Report

@@ -71,9 +71,9 @@ async def transcribe_chunk_node(state: STTState) -> STTState:
     return {**state, "processed_chunks": state["processed_chunks"] + [new_chunk], "current_chunk_index": idx + 1}
 
 async def parallel_transcribe_node(state: STTState) -> STTState:
-    """Parallel Baseline processing (5 concurrency)."""
+    """Parallel Baseline processing (2 concurrency)."""
     client = GeminiClient(api_key=state["api_key"], model=state["model_name"], base_url=state.get("base_url"), use_inline_data=state.get("use_inline_data", False))
-    semaphore = asyncio.Semaphore(5)
+    semaphore = asyncio.Semaphore(2)
     
     async def sem_request(path, i):
         async with semaphore:
