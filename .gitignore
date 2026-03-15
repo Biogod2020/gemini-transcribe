@@ -21,3 +21,12 @@ bin/ffprobe
 # UV
 .uv/
 uv.lock
+
+# Large Media Files
+data/raw/*
+data/processed/*
+*.wav
+*.mp3
+*.opus
+*.m4a
+output/*
