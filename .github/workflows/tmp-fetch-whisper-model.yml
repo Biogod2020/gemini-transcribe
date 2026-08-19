@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - tmp-fetch-whisper-model-20260819
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/workflows/tmp-fetch-whisper-model.yml
 
 permissions:
   contents: read
