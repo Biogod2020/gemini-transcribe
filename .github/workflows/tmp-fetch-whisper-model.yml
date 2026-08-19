@@ -14,24 +14,34 @@ permissions:
   contents: read
 
 jobs:
-  fetch-model:
+  fetch-models:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Download multilingual Whisper small q5_1 model
+      - name: Download multilingual Whisper tiny and base q5_1 models
         shell: bash
         run: |
           set -euo pipefail
-          curl -fL --retry 5 --retry-all-errors \
-            -o ggml-small-q5_1.bin \
-            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin
-          test "$(stat -c%s ggml-small-q5_1.bin)" -gt 180000000
-          sha256sum ggml-small-q5_1.bin
-      - name: Upload model artifact
+          for model in tiny base; do
+            curl -fL --retry 5 --retry-all-errors \
+              -o "ggml-${model}-q5_1.bin" \
+              "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-${model}-q5_1.bin"
+            test "$(stat -c%s "ggml-${model}-q5_1.bin")" -gt 30000000
+            sha256sum "ggml-${model}-q5_1.bin"
+          done
+      - name: Upload tiny model artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ggml-small-q5_1
-          path: ggml-small-q5_1.bin
+          name: ggml-tiny-q5_1
+          path: ggml-tiny-q5_1.bin
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload base model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggml-base-q5_1
+          path: ggml-base-q5_1.bin
           compression-level: 0
           retention-days: 1
           if-no-files-found: error
